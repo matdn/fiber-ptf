@@ -31,9 +31,9 @@ export function Water() {
         tDudv: { value: dudvTexture },
         textureMatrix: { value: new THREE.Matrix4() },
         time: { value: 0 },
-        waveStrength: { value: 0.7 },
+        waveStrength: { value: 1 },
         waveSpeed: { value: 0.005 },
-        transmission: { value: 0.2 },
+        transmission: { value: 0 },
         dudvScale: { value: 0.01 },
         opacity: { value: 1.0 },
       },
@@ -76,8 +76,8 @@ export function Water() {
 
     return {
       clipBias: 0.003,
-      textureWidth: window.innerWidth * 2,
-      textureHeight: window.innerHeight * 2,
+      textureWidth: window.innerWidth * 0.5, // Réduire de 2x à 0.5x pour améliorer les performances
+      textureHeight: window.innerHeight * 0.5,
       color: 0x000000,
       shader,
     }
@@ -97,11 +97,9 @@ export function Water() {
     <reflector
       ref={reflectorRef}
       args={[
-        new THREE.PlaneGeometry(800, 800),
+        new THREE.PlaneGeometry(400, 400, 10, 10), // Réduire la taille et les segments
         reflectorOptions
       ]}
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -30.5, 0]}
     />
   )
 }

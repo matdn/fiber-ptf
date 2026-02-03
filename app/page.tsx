@@ -1,6 +1,8 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import Header from '@/components/Header'
+import { useState } from 'react'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
@@ -12,9 +14,15 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 })
 
 export default function Home() {
+  const [isUnderwater, setIsUnderwater] = useState(false)
+
   return (
-    <main className="w-full h-screen overflow-hidden">
-      <Scene  />
+    <main className="w-full overflow-hidden h-screen">
+      <Header isUnderwater={isUnderwater} />
+      
+      <div className="fixed inset-0 z-0">
+        <Scene onUnderwaterToggle={setIsUnderwater} isUnderwater={isUnderwater} />
+      </div>
     </main>
   )
 }
