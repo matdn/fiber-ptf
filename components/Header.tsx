@@ -54,6 +54,22 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
   const animStateRef = useRef({ opacity: 0, scale: 0, rotation: Math.PI })
   const tweenRef = useRef<gsap.core.Tween | null>(null)
   const lastProgressRef = useRef(0)
+  const header = useRef<HTMLElement>(null)
+  const [animClass, setAnimClass] = useState('')
+
+  useEffect(() => {
+    if (header.current) {
+      // Retirer la classe pour forcer le re-déclenchement
+      setAnimClass('headerNormal')
+      
+      // Attendre un frame puis ajouter la nouvelle classe
+      requestAnimationFrame(() => {
+        setAnimClass(isUnderwater ? 'headerReverse' : 'headerSlide')
+      })
+    }
+  }, [isUnderwater])
+
+
 
   useEffect(() => {
     const animState = animStateRef.current
@@ -116,7 +132,7 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
   }, [])
 
   return (
-    <header className={`fixed left-1/2 -translate-x-1/2 z-50 transition-all duration-700 ${isUnderwater ? 'bottom-4' : 'top-4'}`} style={{ mixBlendMode: 'difference' }}>
+    <header ref={header} className={`fixed left-1/2 -translate-x-1/2 z-50 ${animClass} ${isUnderwater ? 'bottom-4' : 'top-4'}`} style={{ mixBlendMode: 'difference' }}>
       <nav className="backdrop-blur-xl bg-white/5 rounded px-6  shadow-lg flex items-center justify-between border min-w-xl " style={{ fontFamily: 'Mabry, sans-serif' }}>
         <div className="flex items-center justify-between w-full">
           <ul className="hidden md:flex w-full justify-around items-center gap-4 ">

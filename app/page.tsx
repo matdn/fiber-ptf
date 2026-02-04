@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Header from '@/components/Header'
-import { useState } from 'react'
+import { useUnderwater } from '@/contexts/UnderwaterContext'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
@@ -14,7 +14,7 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 })
 
 export default function Home() {
-  const [isUnderwater, setIsUnderwater] = useState(false)
+  const { isUnderwater, setIsUnderwater } = useUnderwater()
 
   return (
     <main className="w-full overflow-hidden h-screen">

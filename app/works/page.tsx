@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ProjectsGrid } from '@/components/GridClass'
-import { EffectComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js'
+import { EffectComposer as ThreeComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js'
+import { EffectComposer, SMAA, ChromaticAberration } from '@react-three/postprocessing'
 import { DistortionShader } from '@/components/DistortionShader'
 import Header from '@/components/Header'
+import { useUnderwater } from '@/contexts/UnderwaterContext'
 
-function Postprocessing({ distortionIntensity }: { distortionIntensity: number }) {
+function Postprocessing({ distortionIntensity, isUnderwater }: { distortionIntensity: number; isUnderwater: boolean }) {
   const { gl, scene, camera } = useThree()
   
   const { effectComposer, distortionShader } = useMemo(() => {
@@ -15,7 +17,7 @@ function Postprocessing({ distortionIntensity }: { distortionIntensity: number }
     const distortionShader = new DistortionShader()
     const distortionPass = new ShaderPass(distortionShader)
 
-    const effectComposer = new EffectComposer(gl)
+    const effectComposer = new ThreeComposer(gl)
     effectComposer.addPass(renderPass)
     effectComposer.addPass(distortionPass)
 
@@ -27,12 +29,19 @@ function Postprocessing({ distortionIntensity }: { distortionIntensity: number }
     distortionShader.setDistortion(distortionIntensity)
   }, [distortionIntensity, distortionShader])
   
-  // Render with effect composer
+  // Render with effect composer (only if not underwater, let drei handle it otherwise)
   useFrame(() => {
-    effectComposer.render()
+    if (!isUnderwater) {
+      effectComposer.render()
+    }
   }, 1)
  
-  return null
+  return isUnderwater ? (
+    <EffectComposer multisampling={0}>
+      <ChromaticAberration offset={[0.0015, 0.0015]} />
+      <SMAA />
+    </EffectComposer>
+  ) : null
 }
 
 function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) => void }) {
@@ -100,27 +109,29 @@ function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) 
   return <primitive object={grid} />
 }
 
-function Scene({ distortionIntensity, onDistortionChange }: { 
+function Scene({ distortionIntensity, onDistortionChange, isUnderwater }: { 
   distortionIntensity: number
   onDistortionChange: (intensity: number) => void
+  isUnderwater: boolean
 }) {
   return (
     <>
-      <color attach="background" args={['#000000']} />
+      <color attach="background" args={isUnderwater ? ['#ffffff'] : ['#000000']} />
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
       <Grid onDistortionChange={onDistortionChange} />
-      <Postprocessing distortionIntensity={distortionIntensity} />
+      <Postprocessing distortionIntensity={distortionIntensity} isUnderwater={isUnderwater} />
     </>
   )
 }
 
 export default function WorksPage() {
   const [distortionIntensity, setDistortionIntensity] = useState(0)
+  const { isUnderwater } = useUnderwater()
 
   return (
     <>
-      <Header />
+      <Header isUnderwater={isUnderwater} />
       <main className="w-full h-screen relative">
         <Canvas
           camera={{ position: [0, 0, 12], fov: 60 }}
@@ -129,13 +140,26 @@ export default function WorksPage() {
           <Scene 
             distortionIntensity={distortionIntensity}
             onDistortionChange={setDistortionIntensity}
+            isUnderwater={isUnderwater}
           />
         </Canvas>
         
         {/* Overlay avec gradient sur les bords */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: isUnderwater 
+                ? 'radial-gradient(circle at center, transparent 50%, rgba(255,255,255,0.3) 100%)'
+                : undefined
+            }}
+          />
+          {!isUnderwater && (
+            <>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+            </>
+          )}
         </div>
       </main>
     </>

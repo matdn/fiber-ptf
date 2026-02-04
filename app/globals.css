@@ -59,3 +59,46 @@ body::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
+
+header{
+  /* transform: translate(-50%, -150%); */
+  animation: headerSlide 1s ease-out forwards;
+}
+
+.headerNormal{
+  /* transform: translate(-50%, -150%); */
+  animation: headerBackSlide 1s ease-out forwards;
+}
+
+.headerReverse{
+  /* transform: translate(-50%, 150%); */
+  animation: headerSlideReverse 1s ease-out forwards;
+} 
+
+@keyframes headerSlide {
+  from {
+    transform: translate(0%, -150%);
+  }
+  to {
+    transform: translate(0%, 0%);
+  }
+
+}
+
+@keyframes headerSlideReverse {
+  from {
+    transform: translate(0%, 150%);
+  }
+  to {
+    transform: translate(0%, 0%);
+  }
+}
+
+@keyframes headerBackSlide {
+  from {
+    transform: translate(0%, 0%);
+  }
+  to {
+    transform: translate(0%, -150%);
+  }
+}
