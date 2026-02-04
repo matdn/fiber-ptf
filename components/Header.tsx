@@ -23,7 +23,7 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
         if (childMesh.material) {
           childMesh.material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-            transparent: true,
+        
           })
         }
       }
@@ -56,6 +56,24 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
   const lastProgressRef = useRef(0)
   const header = useRef<HTMLElement>(null)
   const [animClass, setAnimClass] = useState('')
+
+  // Animation d'apparition au montage
+  useEffect(() => {
+    const animState = animStateRef.current
+    gsap.to(animState, {
+      opacity: 1,
+      scale: 3,
+      rotation: 0,
+      duration: 1.5,
+      delay: 0.3,
+      ease: 'elastic.out(1, 0.6)',
+      onUpdate: () => {
+        setCurveOpacity(animState.opacity)
+        setCurveScale(animState.scale)
+        setCurveRotation(animState.rotation)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (header.current) {
@@ -147,12 +165,14 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
               </Link>
             </li>
             
-            <li className="w-16 h-12 rounded-full overflow-hidden">
-              <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} intensity={1} />
-                <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
-              </Canvas>
+            <li className="w-10 h-10 rounded-full overflow-hidden">
+              <a href="/">
+                <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
+                  <ambientLight intensity={100.5} />
+                  <pointLight position={[10, 10, 10]} intensity={1} />
+                  <MiniCurve scale={curveScale} rotationY={curveRotation} />
+                </Canvas>
+              </a>
             </li>
             
             <li>

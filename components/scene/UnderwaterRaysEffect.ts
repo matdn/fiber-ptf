@@ -76,7 +76,7 @@ export class UnderwaterRaysEffect extends Effect {
         }
       `,
       {
-        uniforms: new Map([
+        uniforms: new Map<string, Uniform<number | number[]>>([
           ['time', new Uniform(0)],
           ['resolution', new Uniform([1024, 1024])]
         ])
@@ -84,8 +84,8 @@ export class UnderwaterRaysEffect extends Effect {
     )
   }
   
-  update(renderer: any, inputBuffer: any, deltaTime: number) {
-    const uniforms = (this as any).uniforms
-    uniforms.get('time').value += deltaTime
+  update(_renderer: unknown, _inputBuffer: unknown, deltaTime: number) {
+    const uniforms = (this as { uniforms: Map<string, Uniform<number | number[]>> }).uniforms
+    uniforms.get('time')!.value = (uniforms.get('time')!.value as number) + deltaTime
   }
 }

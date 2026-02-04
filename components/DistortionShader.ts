@@ -30,11 +30,17 @@ export const fragmentShader = /* glsl */ `
     vec2 shiftedUv = getShiftedUv(vUv);
     float distanceFromCenter = length(shiftedUv);
     
-    // Lens distortion effect plus subtil - utilise smoothstep pour limiter l'effet sur les bords extrêmes
-    float smoothDist = smoothstep(0.0, 1.4, distanceFromCenter);
-    float distortionFactor = 1.0 + distortion.x * smoothDist * smoothDist;
+    // Masque avec transition douce pour éviter les artefacts
+    float edgeMask = 1.0 - smoothstep(0.6, 1.0, distanceFromCenter);
+    
+    // Lens distortion effect avec rayon modéré
+    float smoothDist = smoothstep(0.0, 1.0, distanceFromCenter);
+    float distortionFactor = 1.0 + distortion.x * smoothDist * smoothDist * edgeMask;
     vec2 distortedUv = shiftedUv * distortionFactor;
     vec2 transformedUv = getUnshiftedUv(distortedUv);
+    
+    // Clamp les UVs pour éviter les artefacts sur les bords
+    transformedUv = clamp(transformedUv, 0.0, 1.0);
     
     // Sample render texture and output fragment
     vec3 color = texture2D(tDiffuse, transformedUv).rgb;

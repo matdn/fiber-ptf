@@ -8,6 +8,7 @@ import { EffectComposer, SMAA, ChromaticAberration } from '@react-three/postproc
 import { DistortionShader } from '@/components/DistortionShader'
 import Header from '@/components/Header'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
+import { DraggableSphere } from '@/components/DraggableSphere'
 
 function Postprocessing({ distortionIntensity, isUnderwater }: { distortionIntensity: number; isUnderwater: boolean }) {
   const { gl, scene, camera } = useThree()
@@ -29,11 +30,9 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
     distortionShader.setDistortion(distortionIntensity)
   }, [distortionIntensity, distortionShader])
   
-  // Render with effect composer (only if not underwater, let drei handle it otherwise)
+  // Render with effect composer
   useFrame(() => {
-    if (!isUnderwater) {
-      effectComposer.render()
-    }
+    effectComposer.render()
   }, 1)
  
   return isUnderwater ? (
@@ -44,9 +43,14 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
   ) : null
 }
 
-function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) => void }) {
+function Grid({ onDistortionChange, onDragVelocity }: { 
+  onDistortionChange: (intensity: number) => void
+  onDragVelocity: (velocity: { x: number; y: number }) => void
+}) {
   const { camera, gl } = useThree()
   const hasLoaded = useRef(false)
+  const lastPointerPos = useRef({ x: 0, y: 0 })
+  const isDragging = useRef(false)
   
   const grid = useMemo(() => {
     return new ProjectsGrid(camera, onDistortionChange)
@@ -72,16 +76,35 @@ function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) 
     
     const handlePointerMove = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
-      grid.onPointerMove(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height)
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      
+      grid.onPointerMove(x, y, rect.width, rect.height)
+      
+      // Calculate drag velocity
+      if (isDragging.current) {
+        const velocityX = x - lastPointerPos.current.x
+        const velocityY = y - lastPointerPos.current.y
+        onDragVelocity({ x: velocityX, y: velocityY })
+      }
+      
+      lastPointerPos.current = { x, y }
     }
 
     const handlePointerDown = (e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
-      grid.onPointerDown(e.clientX - rect.left, e.clientY - rect.top)
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      
+      grid.onPointerDown(x, y)
+      isDragging.current = true
+      lastPointerPos.current = { x, y }
     }
 
     const handlePointerUp = () => {
       grid.onPointerUp()
+      isDragging.current = false
+      onDragVelocity({ x: 0, y: 0 })
     }
 
     canvas.addEventListener('pointermove', handlePointerMove)
@@ -95,7 +118,7 @@ function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) 
       canvas.removeEventListener('pointerup', handlePointerUp)
       canvas.removeEventListener('pointerleave', handlePointerUp)
     }
-  }, [grid, gl])
+  }, [grid, gl, onDragVelocity])
 
   // Mettre à jour la grille chaque frame
   useFrame(() => {
@@ -109,24 +132,28 @@ function Grid({ onDistortionChange }: { onDistortionChange: (intensity: number) 
   return <primitive object={grid} />
 }
 
-function Scene({ distortionIntensity, onDistortionChange, isUnderwater }: { 
+function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelocity, onDragVelocity }: { 
   distortionIntensity: number
   onDistortionChange: (intensity: number) => void
   isUnderwater: boolean
+  dragVelocity: { x: number; y: number }
+  onDragVelocity: (velocity: { x: number; y: number }) => void
 }) {
   return (
     <>
       <color attach="background" args={isUnderwater ? ['#ffffff'] : ['#000000']} />
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
-      <Grid onDistortionChange={onDistortionChange} />
-      <Postprocessing distortionIntensity={distortionIntensity} isUnderwater={isUnderwater} />
+      <Grid onDistortionChange={onDistortionChange} onDragVelocity={onDragVelocity} />
+      <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
+      <Postprocessing distortionIntensity={isUnderwater ? distortionIntensity : distortionIntensity} isUnderwater={isUnderwater} />
     </>
   )
 }
 
 export default function WorksPage() {
   const [distortionIntensity, setDistortionIntensity] = useState(0)
+  const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const { isUnderwater } = useUnderwater()
 
   return (
@@ -141,6 +168,8 @@ export default function WorksPage() {
             distortionIntensity={distortionIntensity}
             onDistortionChange={setDistortionIntensity}
             isUnderwater={isUnderwater}
+            dragVelocity={dragVelocity}
+            onDragVelocity={setDragVelocity}
           />
         </Canvas>
         

@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState, useRef, useMemo, useCallback } from 'rea
 import { Water } from './Water'
 import * as THREE from 'three'
 import { EffectComposer, Bloom, SMAA, ChromaticAberration } from '@react-three/postprocessing'
+import { Preload } from '@react-three/drei'
 import gsap from 'gsap'
 import { Model } from './scene/Model'
 import { CameraFollowMouse } from './scene/CameraFollowMouse'
@@ -12,6 +13,8 @@ import { CurveRotation } from './scene/CurveRotation'
 import { UnderwaterRaysEffect } from './scene/UnderwaterRaysEffect'
 import { DisplacementTransitionEffect } from './scene/DisplacementTransitionEffect'
 import { Fluid } from '@whatisjery/react-fluid-distortion'
+import { CurveParticles } from './scene/CurveParticles'
+import { Stars } from './scene/Stars'
 
 export default function Scene({ onUnderwaterToggle, isUnderwater }: { 
   onUnderwaterToggle: (value: boolean) => void
@@ -21,6 +24,7 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
   const [curveObject, setCurveObject] = useState<THREE.Object3D | null>(null)
   const [scrollOffset, setScrollOffset] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [bloomIntensity, setBloomIntensity] = useState(0.1)
   const cameraRef = useRef<THREE.Camera | null>(null)
   
   const initialCameraPosition = useMemo(() => new THREE.Vector3(-20, -10, -10), [])
@@ -43,6 +47,11 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
       const toUnderwater = !isUnderwater
       const duration = toUnderwater ? 2.5 : 2.0
       
+      // Utiliser un microtask pour éviter le setState pendant le render
+      Promise.resolve().then(() => {
+        setBloomIntensity(0)
+      })
+      
       gsap.to(cameraRef.current.position, {
         y: cameraRef.current.position.y + (toUnderwater ? -5 : 5),
         duration: duration,
@@ -53,12 +62,17 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
           displacementEffect.setProgress(progress)
           
           if (progress >= 0.5 && progress < 0.52 && isUnderwater !== toUnderwater) {
-            onUnderwaterToggle(toUnderwater)
+            // Utiliser un microtask pour éviter le setState pendant le render
+            Promise.resolve().then(() => {
+              onUnderwaterToggle(toUnderwater)
+            })
           }
         },
         onComplete: () => {
           displacementEffect.setProgress(0)
           setIsTransitioning(false)
+          // Remettre le bloom uniquement si on est en surface
+          setBloomIntensity(toUnderwater ? 0 : 0.1)
         }
       })
     } else if (!cameraRef.current) {
@@ -87,6 +101,8 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
         />
         <CurveRotation curveObject={curveObject} />
         
+        {!isUnderwater && <Stars count={1500} />}
+        
         <Suspense fallback={null}>
           <Model 
             onCurveFound={setCurvePosition} 
@@ -94,6 +110,7 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
             onCurveClick={handleCurveClick}
             isUnderwater={isUnderwater}
           />
+          <CurveParticles curvePosition={curvePosition} isUnderwater={isUnderwater} />
           <group 
             rotation={isUnderwater ? [Math.PI / 2, 0, 0] : [-Math.PI / 2, 0, 0]}
             position={isUnderwater ? [0, 0, 0] : [0, -20, 0]}
@@ -112,25 +129,27 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
             />
           )}
           <primitive object={displacementEffect} />
-          {!isUnderwater && !isTransitioning ? (
+          {bloomIntensity > 0 && (
             <Bloom 
-              intensity={0.1}
-              luminanceThreshold={0.1}
-              luminanceSmoothing={0.1}
+              intensity={bloomIntensity}
+              luminanceThreshold={0.9}
+              luminanceSmoothing={0.3}
               radius={0.8}
               mipmapBlur
             />
-          ) : null}
+          )}
           <SMAA />
-          {isUnderwater ? (
+          {isUnderwater && (
             <>
               <primitive object={underwaterRaysEffect} />
               <ChromaticAberration 
                 offset={[0.002, 0.002]}
               />
             </>
-          ) : null}
-        </EffectComposer> 
+          )}
+        </EffectComposer>
+        
+        <Preload all />
       </Canvas>
       
       <div 
