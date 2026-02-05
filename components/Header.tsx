@@ -56,6 +56,7 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
   const lastProgressRef = useRef(0)
   const header = useRef<HTMLElement>(null)
   const [animClass, setAnimClass] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Animation d'apparition au montage
   useEffect(() => {
@@ -150,10 +151,11 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
   }, [])
 
   return (
-    <header ref={header} className={`fixed left-1/2 -translate-x-1/2 z-50 ${animClass} ${isUnderwater ? 'bottom-4' : 'top-4'}`} style={{ mixBlendMode: 'difference' }}>
-      <nav className="backdrop-blur-xl bg-white/5 rounded px-6  shadow-lg flex items-center justify-between border min-w-xl " style={{ fontFamily: 'Mabry, sans-serif' }}>
-        <div className="flex items-center justify-between w-full">
-          <ul className="hidden md:flex w-full justify-around items-center gap-4 ">
+    <>
+      <header ref={header} className={`${isUnderwater ? ' md:bottom-0' : 'md:top-2 '} fixed z-50 w-full ${animClass} w-32 h-32 md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: 'difference' }}>
+        {/* Desktop Menu */}
+        <nav className="hidden md:block left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Mabry, sans-serif' }}>
+          <ul className="flex w-full justify-around items-center gap-4">
             <li>
               <a href="#portfolio" className="text-white/80 hover:text-white transition-colors">
                 portfolio
@@ -170,7 +172,7 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
                 <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
                   <ambientLight intensity={100.5} />
                   <pointLight position={[10, 10, 10]} intensity={1} />
-                  <MiniCurve scale={curveScale} rotationY={curveRotation} />
+                  <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
                 </Canvas>
               </a>
             </li>
@@ -186,14 +188,77 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
               </a>
             </li>
           </ul>
-          
-          <button type="button" className="md:hidden text-white" aria-label="Menu">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
-      </nav>
-    </header>
+        </nav>
+        
+        {/* Mobile Menu Button */}
+        <button
+          type="button"
+          className={`${isMobileMenuOpen ? 'w-[80%] md:hidden fixed bottom-6 right-2 transition-all h-16 rounded-full overflow-hidden backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg' : 'md:hidden fixed bottom-6 right-0 w-16 h-16 rounded-full overflow-hidden backdrop-blur-xl bg-white/10 border border-white/20 shadow-lg'} `}
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Menu"
+        >
+          <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
+            <ambientLight intensity={100.5} />
+            <pointLight position={[10, 10, 10]} intensity={1} />
+            <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
+          </Canvas>
+           <nav 
+            className="md:hidden backdrop-blur-l bg-white/5 rounded-2xl p-6 shadow-2xl"
+            style={{ fontFamily: 'Mabry, sans-serif' }}
+          >
+            <ul className="flexgap-4">
+              <li>
+                <a 
+                  href="#portfolio" 
+                  className="text-white/80 hover:text-white transition-colors block text-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  portfolio
+                </a>
+              </li>
+              <li>
+                <Link 
+                  href="/works" 
+                  className="text-white/80 hover:text-white transition-colors block text-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  works
+                </Link>
+              </li>
+              <li>
+                <a 
+                  href="#about" 
+                  className="text-white/80 hover:text-white transition-colors block text-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  about
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#contact" 
+                  className="text-white/80 hover:text-white transition-colors block text-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  contact
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </button>
+        
+        {/* {isMobileMenuOpen && (
+         
+        )} */}
+      </header>
+      
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </>
   )
 }

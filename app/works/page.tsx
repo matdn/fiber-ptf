@@ -50,6 +50,7 @@ function Grid({ onDistortionChange, onDragVelocity }: {
   const { camera, gl } = useThree()
   const hasLoaded = useRef(false)
   const lastPointerPos = useRef({ x: 0, y: 0 })
+  const lastPointerTime = useRef(0)
   const isDragging = useRef(false)
   
   const grid = useMemo(() => {
@@ -83,9 +84,14 @@ function Grid({ onDistortionChange, onDragVelocity }: {
       
       // Calculate drag velocity
       if (isDragging.current) {
-        const velocityX = x - lastPointerPos.current.x
-        const velocityY = y - lastPointerPos.current.y
+        const now = performance.now()
+        const dt = Math.max(now - lastPointerTime.current, 1)
+        const baseScale = 16.67 / dt
+        const touchBoost = e.pointerType === 'touch' ? 1.8 : 1
+        const velocityX = (x - lastPointerPos.current.x) * baseScale * touchBoost
+        const velocityY = (y - lastPointerPos.current.y) * baseScale * touchBoost
         onDragVelocity({ x: velocityX, y: velocityY })
+        lastPointerTime.current = now
       }
       
       lastPointerPos.current = { x, y }
@@ -99,12 +105,19 @@ function Grid({ onDistortionChange, onDragVelocity }: {
       grid.onPointerDown(x, y)
       isDragging.current = true
       lastPointerPos.current = { x, y }
+      lastPointerTime.current = performance.now()
+      if (canvas.setPointerCapture) {
+        canvas.setPointerCapture(e.pointerId)
+      }
     }
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e?: PointerEvent) => {
       grid.onPointerUp()
       isDragging.current = false
       onDragVelocity({ x: 0, y: 0 })
+      if (e && canvas.releasePointerCapture) {
+        canvas.releasePointerCapture(e.pointerId)
+      }
     }
 
     canvas.addEventListener('pointermove', handlePointerMove)
