@@ -1,5 +1,5 @@
 import { Effect } from 'postprocessing'
-import { Uniform, TextureLoader } from 'three'
+import { Uniform, Texture, TextureLoader } from 'three'
 
 const fragmentShader = `
   uniform float progress;
@@ -71,9 +71,9 @@ export class DisplacementTransitionEffect extends Effect {
       'DisplacementTransitionEffect',
       fragmentShader,
       {
-        uniforms: new Map<string, Uniform<number | THREE.Texture | null>>([
+        uniforms: new Map<string, Uniform<number | Texture | null>>([
           ['progress', new Uniform(0)],
-          ['displacementMap', new Uniform<THREE.Texture | null>(null)],
+          ['displacementMap', new Uniform<Texture | null>(null)],
           ['intensity', new Uniform(0.3)]
         ])
       }
@@ -81,18 +81,18 @@ export class DisplacementTransitionEffect extends Effect {
     
     // Charger la displacement map
     textureLoader.load('/displacement-map.jpg', (texture) => {
-      const uniforms = (this as { uniforms: Map<string, Uniform<number | THREE.Texture | null>> }).uniforms
+      const uniforms = (this as { uniforms: Map<string, Uniform<number | Texture | null>> }).uniforms
       uniforms.get('displacementMap')!.value = texture
     })
   }
   
   setProgress(value: number) {
-    const uniforms = (this as { uniforms: Map<string, Uniform<number | THREE.Texture | null>> }).uniforms
+    const uniforms = (this as { uniforms: Map<string, Uniform<number | Texture | null>> }).uniforms
     uniforms.get('progress')!.value = value
   }
   
   setIntensity(value: number) {
-    const uniforms = (this as { uniforms: Map<string, Uniform<number | THREE.Texture | null>> }).uniforms
+    const uniforms = (this as { uniforms: Map<string, Uniform<number | Texture | null>> }).uniforms
     uniforms.get('intensity')!.value = value
   }
 }

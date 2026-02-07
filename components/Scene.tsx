@@ -120,16 +120,18 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
         </Suspense>
         
         <EffectComposer multisampling={0}>
-          {isUnderwater && (
+          {isUnderwater ? (
             <Fluid 
               rainbow={false} 
               intensity={1} 
               fluidColor="#000000"
               radius={0.5}
             />
+          ) : (
+            <></>
           )}
           <primitive object={displacementEffect} />
-          {bloomIntensity > 0 && (
+          {bloomIntensity > 0 ? (
             <Bloom 
               intensity={bloomIntensity}
               luminanceThreshold={0.9}
@@ -137,15 +139,19 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
               radius={0.8}
               mipmapBlur
             />
+          ) : (
+            <></>
           )}
           <SMAA />
-          {isUnderwater && (
+          {isUnderwater ? (
             <>
               <primitive object={underwaterRaysEffect} />
               <ChromaticAberration 
                 offset={[0.002, 0.002]}
               />
             </>
+          ) : (
+            <></>
           )}
         </EffectComposer>
         

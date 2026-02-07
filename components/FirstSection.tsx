@@ -41,7 +41,7 @@ function Postprocessing({ distortionIntensity }: { distortionIntensity: number }
 function Grid({ scrollProgress, onDistortionChange, containerRef }: { 
   scrollProgress: number, 
   onDistortionChange: (intensity: number) => void,
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement | null>
 }) {
   const { camera, gl } = useThree()
   const isVisible = useRef(false)
@@ -137,7 +137,7 @@ function Scene({ scrollProgress, distortionIntensity, onDistortionChange, contai
   scrollProgress: number
   distortionIntensity: number
   onDistortionChange: (intensity: number) => void
-  containerRef: React.RefObject<HTMLDivElement>
+  containerRef: React.RefObject<HTMLDivElement | null>
 }) {
   return (
     <>
