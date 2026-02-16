@@ -1,83 +1,118 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 
 interface ModelProps {
   onCurveFound?: (position: THREE.Vector3) => void
   onCurveRefFound?: (ref: THREE.Object3D) => void
-  onCurveClick?: () => void
+  onCurveStarFound?: (position: THREE.Vector3) => void
   isUnderwater: boolean
+  isInSpace: boolean
 }
 
-export function Model({ onCurveFound, onCurveRefFound, onCurveClick, isUnderwater }: ModelProps) {
+export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace }: ModelProps) {
   const { scene } = useGLTF('/model.glb')
   const curveRef = useRef<THREE.Object3D | null>(null)
-  const { raycaster, pointer, camera } = useThree()
+  const curveStarRef = useRef<THREE.Object3D | null>(null)
 
   useEffect(() => {
     scene.traverse((child) => {
       if (child.name.toLowerCase() === 'curve') {
         curveRef.current = child
-        if (onCurveFound) {
-          onCurveFound(child.position.clone())
-        }
-        if (onCurveRefFound) {
-          onCurveRefFound(child)
-        }
-        const childObject = child as THREE.Mesh 
-        childObject.material = new THREE.MeshStandardMaterial({ 
+        onCurveFound?.(child.position.clone())
+        onCurveRefFound?.(child)
+
+        const curveMesh = child as THREE.Mesh
+        curveMesh.material = new THREE.MeshStandardMaterial({
           color: 0xffffff,
           emissive: new THREE.Color(0xffffff),
           toneMapped: false
         })
+
+        if (!curveStarRef.current) {
+          const clonedCurve = child.clone(true)
+          curveStarRef.current = clonedCurve
+          curveStarRef.current.position.set(0, 200, 0)
+        }
       }
     })
-  }, [scene, onCurveFound, onCurveRefFound])
 
-  // Gérer le materiau de la curve
+    if (curveStarRef.current) {
+      onCurveStarFound?.(new THREE.Vector3(0, 200, 0))
+    }
+  }, [scene, onCurveFound, onCurveRefFound, onCurveStarFound])
+
   useEffect(() => {
-    if (curveRef.current) {
-      const mesh = curveRef.current as THREE.Mesh
-      mesh.material = new THREE.MeshStandardMaterial({ 
-        color: isUnderwater ? 0x5555ff : 0xffffff,
-        emissive: new THREE.Color(isUnderwater ? 0x2222ff : 0xffffff),
-        toneMapped: false
+    const curve = curveRef.current as THREE.Mesh | null
+    if (curve) {
+      if (isInSpace) {
+        curve.material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: new THREE.Color(0xffffff),
+          toneMapped: false,
+          transparent: true,
+          opacity: 0
+        })
+      } else {
+        curve.material = new THREE.MeshStandardMaterial({
+          color: isUnderwater ? 0x5555ff : 0xffffff,
+          emissive: new THREE.Color(isUnderwater ? 0x2222ff : 0xffffff),
+          toneMapped: false,
+          transparent: true,
+          opacity: 1
+        })
+      }
+    }
+
+    const curveStar = curveStarRef.current as THREE.Mesh | null
+    if (curveStar && isInSpace) {
+      curveStar.material = new THREE.MeshPhysicalMaterial({
+        transmission: 1,
+        thickness: 10,
+        roughness: 0,
+        metalness: 0.1,
+        ior: 1.2,
+        dispersion: 1,
+        clearcoat: 0.1,
+        clearcoatRoughness: 1.1,
+        iridescence: 1.1,
+        iridescenceIOR: 1,
+        iridescenceThicknessRange: [100, 400],
+        color: 'transparent',
+        transparent: true,
+        depthWrite: true
       })
     }
-  }, [isUnderwater])
+  }, [isUnderwater, isInSpace])
 
   useFrame(() => {
-    if (curveRef.current && onCurveClick) {
-      raycaster.setFromCamera(pointer, camera)
-      const intersects = raycaster.intersectObject(curveRef.current, true)
-      
-      document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default'
+    if (curveStarRef.current && isInSpace) {
+      curveStarRef.current.rotation.z += 0.005
     }
   })
 
-  const handleClick = useCallback((e: any) => {
-    e?.stopPropagation?.()
-    if (onCurveClick) {
-      onCurveClick()
-    }
-  }, [onCurveClick])
-  
+  const curve = curveRef.current
+
   return (
-    <group onClick={handleClick}>
-      <primitive object={scene} scale={1} />
-      {curveRef.current && !isUnderwater && (
-        <pointLight 
-          position={[curveRef.current.position.x, curveRef.current.position.y, curveRef.current.position.z]} 
-          intensity={15} 
-          distance={30}
-          decay={2}
-          color={0xffffff}
-        />
-      )}
-    </group>
+    <>
+      <group>
+        <primitive object={scene} scale={1} />
+        {curve && !isUnderwater && !isInSpace && (
+          <pointLight
+            position={[curve.position.x, curve.position.y, curve.position.z]}
+            intensity={15}
+            distance={30}
+            decay={2}
+            color={0xffffff}
+          />
+        )}
+      </group>
+
+      {isInSpace && curveStarRef.current && <primitive object={curveStarRef.current} scale={5} />}
+    </>
   )
 }
 

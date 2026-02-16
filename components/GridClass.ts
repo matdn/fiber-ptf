@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import gsap from 'gsap'
+import { PROJECT_IMAGE_URLS } from '@/lib/projectImages'
 
 interface Card {
   id: number
@@ -27,13 +28,7 @@ export class ProjectsGrid extends THREE.Group {
   private distortionIntensity = 0
   private onDistortionChange: (intensity: number) => void
   private textureLoader = new THREE.TextureLoader()
-  private imageUrls = [
-    '/imagesProject/img1.png',
-    '/imagesProject/img2.png',
-    '/imagesProject/img3.png',
-    '/imagesProject/img4.png',
-    '/imagesProject/img5.png'
-  ]
+  private imageUrls = [...PROJECT_IMAGE_URLS]
 
   constructor(camera: THREE.Camera, onDistortionChange: (intensity: number) => void) {
     super()

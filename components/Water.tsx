@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo, useState } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
@@ -10,16 +10,51 @@ import { extend } from '@react-three/fiber'
 extend({ Reflector })
 
 export function Water() {
-  const reflectorRef = useRef<any>(null!)
-  const [mousePos, setMousePos] = useState(new THREE.Vector2(0, 0))
-  const prevMousePos = useRef(new THREE.Vector2(0, 0))
+  const reflectorRef = useRef<Reflector | null>(null)
   const smoothMousePos = useRef(new THREE.Vector2(0, 0))
   const smoothPrevMousePos = useRef(new THREE.Vector2(0, 0))
   const ripples = useRef<Array<{ pos: THREE.Vector2; time: number }>>([])
   const lastAddTime = useRef(0)
   const lastMoveTime = useRef(0)
   const staticRipplePos = useRef(new THREE.Vector2(0, 0))
-  const { size, camera } = useThree()
+  const { camera } = useThree()
+
+  useEffect(() => {
+    const reflector = reflectorRef.current
+    if (!reflector) return
+
+    const originalOnBeforeRender = reflector.onBeforeRender
+    const hidden: Array<{ obj: THREE.Object3D; visible: boolean }> = []
+
+    reflector.onBeforeRender = (
+      renderer,
+      scene,
+      camera,
+      geometry,
+      material,
+      group
+    ) => {
+      hidden.length = 0
+
+      scene.traverse((obj) => {
+        if (obj.userData?.excludeFromReflector) {
+          hidden.push({ obj, visible: obj.visible })
+          obj.visible = false
+        }
+      })
+
+      originalOnBeforeRender?.call(reflector, renderer, scene, camera, geometry, material, group)
+
+      for (const entry of hidden) {
+        entry.obj.visible = entry.visible
+      }
+      hidden.length = 0
+    }
+
+    return () => {
+      reflector.onBeforeRender = originalOnBeforeRender
+    }
+  }, [])
   
   // Charger la texture DUDV depuis public
   const dudvTexture = useTexture('/waterudv.png')
@@ -148,59 +183,61 @@ export function Water() {
 
   // Track mouse position and update shader
   useFrame((state) => {
-    if (reflectorRef.current) {
-      const material = reflectorRef.current.material as THREE.ShaderMaterial
-      if (material && material.uniforms) {
-        const currentTime = state.clock.elapsedTime
-        material.uniforms.time.value = currentTime
-        material.uniforms.currentTime.value = currentTime
+    const reflector = reflectorRef.current
+    if (!reflector) return
+
+    const material = reflector.material as THREE.ShaderMaterial | undefined
+    const uniforms = material?.uniforms
+    if (!uniforms) return
+
+    const currentTime = state.clock.elapsedTime
+    uniforms.time.value = currentTime
+    uniforms.currentTime.value = currentTime
         
-        // Use raycaster to get actual intersection with water plane
-        const raycaster = new THREE.Raycaster()
-        const mouse = new THREE.Vector2(state.pointer.x, state.pointer.y)
-        raycaster.setFromCamera(mouse, camera)
+    // Use raycaster to get actual intersection with water plane
+    const raycaster = new THREE.Raycaster()
+    const mouse = new THREE.Vector2(state.pointer.x, state.pointer.y)
+    raycaster.setFromCamera(mouse, camera)
         
-        const intersects = raycaster.intersectObject(reflectorRef.current)
-        if (intersects.length > 0) {
-          const localPoint = reflectorRef.current.worldToLocal(intersects[0].point.clone())
-          const newPos = new THREE.Vector2(localPoint.x, localPoint.y)
+    const intersects = raycaster.intersectObject(reflector)
+    if (intersects.length > 0) {
+      const localPoint = reflector.worldToLocal(intersects[0].point.clone())
+      const newPos = new THREE.Vector2(localPoint.x, localPoint.y)
           
-          // Smooth the mouse positions
-          smoothPrevMousePos.current.lerp(smoothMousePos.current, 0.15)
-          smoothMousePos.current.lerp(newPos, 0.2)
+      // Smooth the mouse positions
+      smoothPrevMousePos.current.lerp(smoothMousePos.current, 0.15)
+      smoothMousePos.current.lerp(newPos, 0.2)
           
-          // Add ripple when mouse moves or every 50ms
-          const distance = smoothMousePos.current.distanceTo(smoothPrevMousePos.current)
-          if (currentTime - lastAddTime.current > 0.05 && distance > 0.5) {
-            // Add new ripple
-            ripples.current.push({
-              pos: smoothMousePos.current.clone(),
-              time: currentTime
-            })
+      // Add ripple when mouse moves or every 50ms
+      const distance = smoothMousePos.current.distanceTo(smoothPrevMousePos.current)
+      if (currentTime - lastAddTime.current > 0.05 && distance > 0.5) {
+        // Add new ripple
+        ripples.current.push({
+          pos: smoothMousePos.current.clone(),
+          time: currentTime
+        })
             
-            // Keep only recent ripples (max 20)
-            if (ripples.current.length > 20) {
-              ripples.current.shift()
-            }
+        // Keep only recent ripples (max 20)
+        if (ripples.current.length > 20) {
+          ripples.current.shift()
+        }
             
-            lastAddTime.current = currentTime
-            lastMoveTime.current = currentTime
-            staticRipplePos.current.copy(smoothMousePos.current)
-          }
+        lastAddTime.current = currentTime
+        lastMoveTime.current = currentTime
+        staticRipplePos.current.copy(smoothMousePos.current)
+      }
           
-          // Update shader uniforms
-          material.uniforms.staticRipplePos.value.copy(staticRipplePos.current)
-          material.uniforms.lastMoveTime.value = lastMoveTime.current
+      // Update shader uniforms
+      ;(uniforms.staticRipplePos.value as THREE.Vector2).copy(staticRipplePos.current)
+      uniforms.lastMoveTime.value = lastMoveTime.current
           
-          // Update shader uniforms with ripple data
-          for (let i = 0; i < 20; i++) {
-            if (i < ripples.current.length) {
-              material.uniforms.ripplePositions.value[i].copy(ripples.current[i].pos)
-              material.uniforms.rippleTimes.value[i] = ripples.current[i].time
-            } else {
-              material.uniforms.rippleTimes.value[i] = -100.0
-            }
-          }
+      // Update shader uniforms with ripple data
+      for (let i = 0; i < 20; i++) {
+        if (i < ripples.current.length) {
+          uniforms.ripplePositions.value[i].copy(ripples.current[i].pos)
+          uniforms.rippleTimes.value[i] = ripples.current[i].time
+        } else {
+          uniforms.rippleTimes.value[i] = -100.0
         }
       }
     }

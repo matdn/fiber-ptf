@@ -23,7 +23,6 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
         if (childMesh.material) {
           childMesh.material = new THREE.MeshBasicMaterial({
             color: 0xffffff,
-        
           })
         }
       }
@@ -47,7 +46,7 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
   return curveClone.current ? <primitive object={curveClone.current} scale={3} /> : null
 }
 
-export default function Header({ isUnderwater = false }: { isUnderwater?: boolean }) {
+export default function Header({ isUnderwater = false, onSpaceToggle }: { isUnderwater?: boolean; onSpaceToggle?: (value: boolean) => void }) {
   const [curveOpacity, setCurveOpacity] = useState(0)
   const [curveScale, setCurveScale] = useState(0)
   const [curveRotation, setCurveRotation] = useState(Math.PI)
@@ -178,9 +177,9 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
             </li>
             
             <li>
-              <a href="#about" className="text-white/80 hover:text-white transition-colors">
+              <button type="button" onClick={() => onSpaceToggle?.(true)} className="text-white/80 hover:text-white transition-colors">
                 about
-              </a>
+              </button>
             </li>
             <li>
               <a href="#contact" className="text-white/80 hover:text-white transition-colors">
@@ -202,11 +201,15 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
             <pointLight position={[10, 10, 10]} intensity={1} />
             <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
           </Canvas>
-           <nav 
-            className="md:hidden backdrop-blur-l bg-white/5 rounded-2xl p-6 shadow-2xl"
+        </button>
+        
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <nav 
+            className="md:hidden fixed bottom-24 right-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl z-50"
             style={{ fontFamily: 'Mabry, sans-serif' }}
           >
-            <ul className="flexgap-4">
+            <ul className="flex flex-col gap-4">
               <li>
                 <a 
                   href="#portfolio" 
@@ -226,13 +229,16 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
                 </Link>
               </li>
               <li>
-                <a 
-                  href="#about" 
-                  className="text-white/80 hover:text-white transition-colors block text-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                <button
+                  type="button"
+                  className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false)
+                    onSpaceToggle?.(true)
+                  }}
                 >
                   about
-                </a>
+                </button>
               </li>
               <li>
                 <a 
@@ -245,11 +251,8 @@ export default function Header({ isUnderwater = false }: { isUnderwater?: boolea
               </li>
             </ul>
           </nav>
-        </button>
+        )}
         
-        {/* {isMobileMenuOpen && (
-         
-        )} */}
       </header>
       
       {/* Mobile Menu Backdrop */}

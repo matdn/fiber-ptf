@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState, useRef, useMemo, useCallback } from 'rea
 import { Water } from './Water'
 import * as THREE from 'three'
 import { EffectComposer, Bloom, SMAA, ChromaticAberration } from '@react-three/postprocessing'
-import { Preload } from '@react-three/drei'
+import { Preload, OrbitControls } from '@react-three/drei'
 import gsap from 'gsap'
 import { Model } from './scene/Model'
 import { CameraFollowMouse } from './scene/CameraFollowMouse'
@@ -15,13 +15,19 @@ import { DisplacementTransitionEffect } from './scene/DisplacementTransitionEffe
 import { Fluid } from '@whatisjery/react-fluid-distortion'
 import { CurveParticles } from './scene/CurveParticles'
 import { Stars } from './scene/Stars'
+import { OrbitingRocks } from './scene/OrbitingRocks'
+import { UnderwaterProjectsCarousel } from './scene/UnderwaterProjectsCarousel'
 
-export default function Scene({ onUnderwaterToggle, isUnderwater }: { 
+export default function Scene({ onUnderwaterToggle, isUnderwater, isInSpace, underwaterRequest, carouselMode }: { 
   onUnderwaterToggle: (value: boolean) => void
   isUnderwater: boolean
+  isInSpace: boolean
+  underwaterRequest?: { toUnderwater: boolean; id: number } | null
+  carouselMode?: 'vertical' | 'horizontal'
 }) {
   const [curvePosition, setCurvePosition] = useState<THREE.Vector3 | null>(null)
   const [curveObject, setCurveObject] = useState<THREE.Object3D | null>(null)
+  const [curveStarPosition, setCurveStarPosition] = useState<THREE.Vector3 | null>(null)
   const [scrollOffset, setScrollOffset] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [bloomIntensity, setBloomIntensity] = useState(0.1)
@@ -41,10 +47,9 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const handleCurveClick = useCallback(() => {
+  const triggerUnderwaterTransition = useCallback((toUnderwater: boolean) => {
     if (cameraRef.current && !isTransitioning) {
       setIsTransitioning(true)
-      const toUnderwater = !isUnderwater
       const duration = toUnderwater ? 2.5 : 2.0
       
       // Utiliser un microtask pour éviter le setState pendant le render
@@ -75,10 +80,33 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
           setBloomIntensity(toUnderwater ? 0 : 0.1)
         }
       })
-    } else if (!cameraRef.current) {
-      onUnderwaterToggle(!isUnderwater)
     }
   }, [onUnderwaterToggle, isUnderwater, isTransitioning, displacementEffect])
+
+  useEffect(() => {
+    if (!underwaterRequest) return
+    if (underwaterRequest.toUnderwater === isUnderwater) return
+    if (isInSpace) return
+    triggerUnderwaterTransition(underwaterRequest.toUnderwater)
+  }, [underwaterRequest, isUnderwater, isInSpace, triggerUnderwaterTransition])
+
+  // Gérer la transition vers l'espace
+  useEffect(() => {
+    if (cameraRef.current && isInSpace && !isTransitioning) {
+      setIsTransitioning(true)
+      
+      gsap.to(cameraRef.current.position, {
+        x: 0,
+        y: 200,
+        z: 30,
+        duration: 4,
+        ease: 'power2.inOut',
+        onComplete: () => {
+          setIsTransitioning(false)
+        }
+      })
+    }
+  }, [isInSpace, isTransitioning])
 
   return (
     <div className="w-full h-screen fixed" style={{ mixBlendMode: isUnderwater ? 'screen' : 'normal' }}>
@@ -97,20 +125,34 @@ export default function Scene({ onUnderwaterToggle, isUnderwater }: {
         <CameraFollowMouse 
           initialPosition={initialCameraPosition} 
           curvePosition={curvePosition} 
-          scrollOffset={scrollOffset} 
+          curveStarPosition={curveStarPosition}
+          scrollOffset={scrollOffset}
+          isInSpace={isInSpace}
         />
+        {isInSpace && <OrbitControls enableDamping dampingFactor={0.05} />}
         <CurveRotation curveObject={curveObject} />
         
-        {!isUnderwater && <Stars count={1500} />}
+        {isInSpace && <Stars count={2000} />}
+        {isInSpace && <Stars count={800} position={[0, 200, 0]} radius={80} />}
         
         <Suspense fallback={null}>
           <Model 
             onCurveFound={setCurvePosition} 
             onCurveRefFound={setCurveObject}
-            onCurveClick={handleCurveClick}
+            onCurveStarFound={setCurveStarPosition}
             isUnderwater={isUnderwater}
+            isInSpace={isInSpace}
+          />
+          <UnderwaterProjectsCarousel
+            isActive={isUnderwater && !isInSpace}
+            centerPosition={curvePosition}
+            mode={carouselMode}
           />
           <CurveParticles curvePosition={curvePosition} isUnderwater={isUnderwater} />
+          <OrbitingRocks 
+            centerPosition={curveStarPosition || new THREE.Vector3(0, 200, 0)} 
+            isVisible={isInSpace}
+          />
           <group 
             rotation={isUnderwater ? [Math.PI / 2, 0, 0] : [-Math.PI / 2, 0, 0]}
             position={isUnderwater ? [0, 0, 0] : [0, -20, 0]}
