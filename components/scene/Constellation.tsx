@@ -39,7 +39,7 @@ export default function Constellation({ isVisible }: { isVisible: boolean }) {
     { x: 25, y: 20, baseX: 25, baseY: 20, label: 'who am i', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
     { x: 50, y: 15, baseX: 50, baseY: 15, label: 'studies', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
     { x: 75, y: 20, baseX: 75, baseY: 20, label: 'freelance', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
-    { x: 85, y: 38, baseX: 85, baseY: 38, label: 'why to chose me for ur project', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
+    { x: 85, y: 38, baseX: 85, baseY: 38, label: '', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
     { x: 85, y: 62, baseX: 85, baseY: 62, label: 'passions', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
     { x: 75, y: 80, baseX: 75, baseY: 80, label: 'other stuff', scale: 1, targetScale: 1, velocityX: 0, velocityY: 0, opacity: 0, targetOpacity: 1 },
   ])

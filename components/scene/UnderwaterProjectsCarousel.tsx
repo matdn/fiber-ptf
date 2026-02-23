@@ -40,7 +40,7 @@ export function UnderwaterProjectsCarousel({
   const textures = useTexture(textureUrls) as THREE.Texture[]
 
   const itemCount = 14
-  const spacing = 4.2
+  const spacing = 6.2
   const radius = 18
   const sizeMultiplier = 2.6
   // Plus la valeur est grande, plus ça "glisse" en spirale autour du tube en descendant.

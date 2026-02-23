@@ -46,7 +46,15 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
   return curveClone.current ? <primitive object={curveClone.current} scale={3} /> : null
 }
 
-export default function Header({ isUnderwater = false, onSpaceToggle }: { isUnderwater?: boolean; onSpaceToggle?: (value: boolean) => void }) {
+export default function Header({
+  isUnderwater = false,
+  onSpaceToggle,
+  onWorkToggle
+}: {
+  isUnderwater?: boolean
+  onSpaceToggle?: (value: boolean) => void
+  onWorkToggle?: () => void
+}) {
   const [curveOpacity, setCurveOpacity] = useState(0)
   const [curveScale, setCurveScale] = useState(0)
   const [curveRotation, setCurveRotation] = useState(Math.PI)
@@ -161,9 +169,19 @@ export default function Header({ isUnderwater = false, onSpaceToggle }: { isUnde
               </a>
             </li>
             <li>
-              <Link href="/works" className="text-white/80 hover:text-white transition-colors">
-                works
-              </Link>
+              {onWorkToggle ? (
+                <button
+                  type="button"
+                  onClick={onWorkToggle}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  works
+                </button>
+              ) : (
+                <Link href="/?underwater=1" className="text-white/80 hover:text-white transition-colors">
+                  works
+                </Link>
+              )}
             </li>
             
             <li className="w-10 h-10 rounded-full overflow-hidden">
@@ -177,12 +195,18 @@ export default function Header({ isUnderwater = false, onSpaceToggle }: { isUnde
             </li>
             
             <li>
-              <button type="button" onClick={() => onSpaceToggle?.(true)} className="text-white/80 hover:text-white transition-colors">
-                about
-              </button>
+              {onSpaceToggle ? (
+                <button type="button" onClick={() => onSpaceToggle?.(true)} className="text-white/80 hover:text-white transition-colors">
+                  about
+                </button>
+              ) : (
+                <Link href="/about" className="text-white/80 hover:text-white transition-colors">
+                  about
+                </Link>
+              )}
             </li>
             <li>
-              <a href="#contact" className="text-white/80 hover:text-white transition-colors">
+              <a href="/contact" className="text-white/80 hover:text-white transition-colors">
                 contact
               </a>
             </li>
@@ -220,25 +244,48 @@ export default function Header({ isUnderwater = false, onSpaceToggle }: { isUnde
                 </a>
               </li>
               <li>
-                <Link 
-                  href="/works" 
-                  className="text-white/80 hover:text-white transition-colors block text-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  works
-                </Link>
+                {onWorkToggle ? (
+                  <button
+                    type="button"
+                    className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      onWorkToggle()
+                    }}
+                  >
+                    works
+                  </button>
+                ) : (
+                  <Link 
+                    href="/?underwater=1" 
+                    className="text-white/80 hover:text-white transition-colors block text-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    works
+                  </Link>
+                )}
               </li>
               <li>
-                <button
-                  type="button"
-                  className="text-white/80 hover:text-white transition-colors block text-lg text-left"
-                  onClick={() => {
-                    setIsMobileMenuOpen(false)
-                    onSpaceToggle?.(true)
-                  }}
-                >
-                  about
-                </button>
+                {onSpaceToggle ? (
+                  <button
+                    type="button"
+                    className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      onSpaceToggle?.(true)
+                    }}
+                  >
+                    about
+                  </button>
+                ) : (
+                  <Link
+                    href="/about"
+                    className="text-white/80 hover:text-white transition-colors block text-lg"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    about
+                  </Link>
+                )}
               </li>
               <li>
                 <a 

@@ -61,15 +61,12 @@ function Grid({ onDistortionChange, onDragVelocity }: {
   useEffect(() => {
     if (grid && !hasLoaded.current) {
       hasLoaded.current = true
-      console.log('💚 SHOW CARDS on page load')
-      // Délai pour laisser le temps à la page de se charger
       setTimeout(() => {
         grid.showInitialCards()
       }, 300)
     }
   }, [grid])
 
-  // Gérer les événements de souris
   useEffect(() => {
     if (!grid) return
 

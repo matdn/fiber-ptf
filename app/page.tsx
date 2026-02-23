@@ -1,11 +1,13 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader } from '@/components/Loader'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import Constellation from '@/components/scene/Constellation'
 import { CustomCursor } from '@/components/CustomCursor'
+import Header from '@/components/Header'
+import { FPSCounter } from '@/components/FPSCounter'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
@@ -19,9 +21,30 @@ export default function Home() {
 
   const environment = isInSpace ? 'space' : isUnderwater ? 'underwater' : 'surface'
 
+  // Direct underwater mode from URL param (no animation)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('underwater') === '1') {
+      setIsUnderwater(true)
+      // Clean the URL without triggering a navigation
+      window.history.replaceState({}, '', '/')
+    }
+  }, [setIsUnderwater])
+
   return (
     <main className="w-full overflow-hidden h-screen">
       {!isLoaded && <Loader onLoaded={() => setIsLoaded(true)} />}
+      <Header
+        isUnderwater={isUnderwater}
+        onSpaceToggle={(value) => {
+          setIsUnderwater(false)
+          setIsInSpace(value)
+        }}
+        onWorkToggle={() => {
+          setIsInSpace(false)
+          setUnderwaterRequest({ toUnderwater: true, id: Date.now() })
+        }}
+      />
 
       <CustomCursor
         enabled={isLoaded}
@@ -46,7 +69,7 @@ export default function Home() {
         }}
       />
       
-      {isInSpace && <Constellation isVisible={true} />}
+      {/* {isInSpace && <Constellation isVisible={true} />} */}
 
       {isLoaded && isUnderwater && !isInSpace && (
         <div className="fixed left-6 bottom-6 z-20 pointer-events-auto">
@@ -71,6 +94,8 @@ export default function Home() {
           carouselMode={carouselMode}
         />
       </div>
+
+      <FPSCounter />
     </main>
   )
 }
