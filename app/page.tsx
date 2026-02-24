@@ -93,9 +93,7 @@ export default function Home() {
           isUnderwater={isUnderwater} 
           isInSpace={isInSpace}
           underwaterRequest={underwaterRequest}
-          carouselMode={carouselMode}
           volumes={volumes}
-          onVolumeChange={handleVolumeChange}
         />
       </div>
 

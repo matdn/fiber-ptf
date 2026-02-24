@@ -76,7 +76,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
 
     const curveStar = curveStarRef.current as THREE.Mesh | null
     if (curveStar && isInSpace) {
-      curveStar.material = null
+      curveStar.material = null as any
     }
   }, [isUnderwater, isInSpace])
 
