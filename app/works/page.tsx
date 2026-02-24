@@ -35,12 +35,12 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
     effectComposer.render()
   }, 1)
  
-  return isUnderwater ? (
-    <EffectComposer multisampling={0}>
-      <ChromaticAberration offset={[0.0015, 0.0015]} />
-      <SMAA />
-    </EffectComposer>
-  ) : null
+  // return isUnderwater ? (
+  //   <EffectComposer multisampling={0}>
+  //     <ChromaticAberration offset={[0.0015, 0.0015]} />
+  //     <SMAA />
+  //   </EffectComposer>
+  // ) : null
 }
 
 function Grid({ onDistortionChange, onDragVelocity }: { 
@@ -156,7 +156,7 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
       <Grid onDistortionChange={onDistortionChange} onDragVelocity={onDragVelocity} />
       <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
-      <Postprocessing distortionIntensity={isUnderwater ? distortionIntensity : distortionIntensity} isUnderwater={isUnderwater} />
+      {/* <Postprocessing distortionIntensity={isUnderwater ? distortionIntensity : distortionIntensity} isUnderwater={isUnderwater} /> */}
     </>
   )
 }

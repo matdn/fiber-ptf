@@ -163,9 +163,14 @@ export default function Header({
         {/* Desktop Menu */}
         <nav className="hidden md:block left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Mabry, sans-serif' }}>
           <ul className="flex w-full justify-around items-center gap-4">
-            <li>
-              <a href="#portfolio" className="text-white/80 hover:text-white transition-colors">
-                portfolio
+           
+            <li className="w-10 h-10 rounded-full overflow-hidden">
+              <a href="/">
+                <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
+                  <ambientLight intensity={100.5} />
+                  <pointLight position={[10, 10, 10]} intensity={1} />
+                  <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
+                </Canvas>
               </a>
             </li>
             <li>
@@ -184,15 +189,7 @@ export default function Header({
               )}
             </li>
             
-            <li className="w-10 h-10 rounded-full overflow-hidden">
-              <a href="/">
-                <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
-                  <ambientLight intensity={100.5} />
-                  <pointLight position={[10, 10, 10]} intensity={1} />
-                  <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
-                </Canvas>
-              </a>
-            </li>
+            
             
             <li>
               {onSpaceToggle ? (

@@ -32,8 +32,8 @@ export function FPSCounter() {
       className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-md border border-white/10 bg-black/70 px-2.5 py-1.5 font-mono text-[10px] backdrop-blur-sm"
       style={{ pointerEvents: 'none' }}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-      <span ref={fpsRef} className="w-6 text-right tabular-nums text-green-400">
+      <span className="h-1.5 w-1.5 rounded-full bg-white" />
+      <span ref={fpsRef} className="w-6 text-right tabular-nums text-white">
         --
       </span>
       <span className="text-white/35">fps</span>

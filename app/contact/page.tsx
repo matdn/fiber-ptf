@@ -15,7 +15,6 @@ const PATHS = [
   'M415 412V2.2419e-06L603 0C728.369 -1.495e-06 830 101.631 830 227V412H415Z',
 ]
 
-// Pre-render the full logo once to an offscreen canvas
 function makeLogoImage(size: number): HTMLCanvasElement {
   const w = size
   const h = Math.round(size * LOGO_ASPECT)
@@ -81,7 +80,6 @@ export default function ContactPage() {
       })
       World.add(engine.world, logoBodies)
 
-      // Spawn a random logo from above every 1.5-4s
       const spawnLogo = () => {
         const { W: sW } = getWH()
         const x = LOGO_W / 2 + Math.random() * (sW - LOGO_W)
@@ -91,7 +89,6 @@ export default function ContactPage() {
           frictionAir: 0.015,
           angle: (Math.random() - 0.5) * Math.PI * 2,
         })
-        // Give it a random lateral nudge
         Body.setVelocity(b, { x: (Math.random() - 0.5) * 4, y: 0 })
         logoBodies.push(b)
         World.add(engine.world, b)
@@ -120,7 +117,6 @@ export default function ContactPage() {
         mouse.x = e.touches[0].clientX - r.left
         mouse.y = e.touches[0].clientY - r.top
       }
-      // Click: explosion blast
       const onClick = (e: MouseEvent) => {
         const r = canvas.getBoundingClientRect()
         const cx = e.clientX - r.left
@@ -168,7 +164,6 @@ export default function ContactPage() {
 
         Engine.update(engine, DT)
 
-        // Remove bodies that fell way below the viewport to cap total count
         const { W: cW, H: cH } = getWH()
         for (let i = logoBodies.length - 1; i >= 0; i--) {
           if (logoBodies[i].position.y > cH + 400) {
@@ -190,7 +185,6 @@ export default function ContactPage() {
           ctx.restore()
         }
 
-        // White gradient mask so logos fade out behind the heading
         const grad = ctx.createLinearGradient(0, 0, 0, cH * 0.5)
         grad.addColorStop(0, 'rgba(255,255,255,1)')
         grad.addColorStop(1, 'rgba(255,255,255,0)')
@@ -248,7 +242,20 @@ export default function ContactPage() {
           <br />
           together!
         </h1>
+         <h2  
+            style={{
+            fontFamily: 'Mabry, sans-serif',
+            fontSize: 'clamp(1rem, 2vw, 2rem)',
+            fontWeight: 200,
+            letterSpacing: '-0.04em',
+            lineHeight: 1.0,
+            color: '#343434',
+            textAlign: 'center',
+            paddingTop: '2.5rem',
+            textDecoration: 'underline',
+          }}><a href="/">contact me here!</a></h2>
       </div>
+     
     </main>
   )
 }

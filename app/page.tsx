@@ -8,6 +8,7 @@ import Constellation from '@/components/scene/Constellation'
 import { CustomCursor } from '@/components/CustomCursor'
 import Header from '@/components/Header'
 import { FPSCounter } from '@/components/FPSCounter'
+import AudioControls from '@/components/AudioControls'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
@@ -18,6 +19,11 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [underwaterRequest, setUnderwaterRequest] = useState<{ toUnderwater: boolean; id: number } | null>(null)
   const [carouselMode, setCarouselMode] = useState<'vertical' | 'horizontal'>('vertical')
+  const [volumes, setVolumes] = useState<{ [key: string]: number }>({
+    mainSceneBackSound: 0.3,
+    mainScenePlusSound: 0.25,
+    underwaterSceneBackSound: 0.2,
+  })
 
   const environment = isInSpace ? 'space' : isUnderwater ? 'underwater' : 'surface'
 
@@ -30,6 +36,10 @@ export default function Home() {
       window.history.replaceState({}, '', '/')
     }
   }, [setIsUnderwater])
+
+  const handleVolumeChange = (key: string, volume: number) => {
+    setVolumes((prev) => ({ ...prev, [key]: volume }))
+  }
 
   return (
     <main className="w-full overflow-hidden h-screen">
@@ -71,18 +81,10 @@ export default function Home() {
       
       {/* {isInSpace && <Constellation isVisible={true} />} */}
 
-      {isLoaded && isUnderwater && !isInSpace && (
-        <div className="fixed left-6 bottom-6 z-20 pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => {
-              setCarouselMode((prev) => (prev === 'vertical' ? 'horizontal' : 'vertical'))
-            }}
-            className="rounded-full border border-white/30 bg-white/5 px-3 py-2 text-[11px] tracking-[0.22em] text-white/75 backdrop-blur-sm transition hover:border-white/50 hover:text-white/90"
-          >
-            TUBE {carouselMode === 'vertical' ? 'VERTICAL' : 'HORIZONTAL'}
-          </button>
-        </div>
+      {isLoaded && !isInSpace && (
+        <>
+          <AudioControls volumes={volumes} onVolumeChange={handleVolumeChange} />
+        </>
       )}
       
       <div className="fixed inset-0 z-0">
@@ -92,6 +94,8 @@ export default function Home() {
           isInSpace={isInSpace}
           underwaterRequest={underwaterRequest}
           carouselMode={carouselMode}
+          volumes={volumes}
+          onVolumeChange={handleVolumeChange}
         />
       </div>
 

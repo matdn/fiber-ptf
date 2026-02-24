@@ -69,18 +69,7 @@ export function Stars({ count = 1500, position = [0, 0, 0], radius = 200 }: Star
           vRotation = time * 0.5 + position.x * 0.1 + position.y * 0.1;
           
           vec3 pos = position;
-          
-          // Effet magnétique du curseur
           vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-          vec2 screenPos = mvPosition.xy / mvPosition.w;
-          vec2 toMouse = mousePosition - screenPos;
-          float distance = length(toMouse);
-          
-          // Attraction subtile vers le curseur
-          float magneticForce = mouseInfluence / (1.0 + distance * 2.0);
-          pos.xy += normalize(toMouse) * magneticForce * 2.0;
-          
-          mvPosition = modelViewMatrix * vec4(pos, 1.0);
           
           // Scintillement basé sur la position et le temps
           float flicker = sin(time * 2.0 + position.x * 0.1 + position.y * 0.1) * 0.5 + 0.5;

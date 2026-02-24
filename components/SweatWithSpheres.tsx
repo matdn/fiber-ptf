@@ -21,22 +21,21 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
   const intersectionRef = useRef(new THREE.Vector3())
   const intersectionLocalRef = useRef(new THREE.Vector3())
 
-  // Stocker les positions d'origine des vertices
   const originalPositions = useMemo(() => {
-    const positions: THREE.Vector3[] = []
-    const normals: THREE.Vector3[] = []
-    const isWhite: boolean[] = []
-    const opacities: number[] = []
-    let index = 0
-    const MIN_DIST = 0.04
-    const MIN_DIST_SQ = MIN_DIST * MIN_DIST
-    const cellSize = MIN_DIST
-    const grid = new Map<string, number[]>()
-    const getKey = (x: number, y: number, z: number) => `${x},${y},${z}`
-    const isFarEnough = (pos: THREE.Vector3, normal: THREE.Vector3) => {
-      const cx = Math.floor(pos.x / cellSize)
-      const cy = Math.floor(pos.y / cellSize)
-      const cz = Math.floor(pos.z / cellSize)
+  const positions: THREE.Vector3[] = []
+  const normals: THREE.Vector3[] = []
+  const isWhite: boolean[] = []
+  const opacities: number[] = []
+  let index = 0
+  const MIN_DIST = 0.04
+  const MIN_DIST_SQ = MIN_DIST * MIN_DIST
+  const cellSize = MIN_DIST
+  const grid = new Map<string, number[]>()
+  const getKey = (x: number, y: number, z: number) => `${x},${y},${z}`
+  const isFarEnough = (pos: THREE.Vector3, normal: THREE.Vector3) => {
+    const cx = Math.floor(pos.x / cellSize)
+    const cy = Math.floor(pos.y / cellSize)
+    const cz = Math.floor(pos.z / cellSize)
 
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
@@ -78,7 +77,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
           const tempNormal = new THREE.Vector3()
           const normalMatrix = new THREE.Matrix3().getNormalMatrix(child.matrixWorld)
           
-          const step = isCap ? 1 : 50
+          const step = isCap ? 1 : 10
           for (let i = 0; i < positionAttribute.count; i += step) {
             tempVector.fromBufferAttribute(positionAttribute, i)
             tempVector.applyMatrix4(child.matrixWorld)
@@ -93,7 +92,6 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
             positions.push(tempVector.clone())
             normals.push(tempNormal.clone())
             isWhite.push(index % 2 === 0)
-            // Beaucoup plus visible
             opacities.push(0.4 + Math.random() * 0.6)
             index++
           }
@@ -104,7 +102,6 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
     return { positions, isWhite, opacities }
   }, [scene])
 
-  // Stocker les positions actuelles et vélocités pour la physique
   const physicsData = useRef<{
     currentPositions: THREE.Vector3[]
     velocities: THREE.Vector3[]
@@ -220,15 +217,11 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
     }, [interactionCenter])
 
   useFrame((state) => {
-    // if (groupRef.current) {
-    //   groupRef.current.rotation.y += 0.6
-    // }
+   
     if (pointsRef.current) {
-      // Convertir la position de la souris en coordonnées 3D
       const raycaster = new THREE.Raycaster()
       raycaster.setFromCamera(state.pointer, camera)
       
-      // Projeter sur un plan aligné caméra, centré sur le modèle
       planeNormalRef.current.copy(camera.getWorldDirection(planeNormalRef.current)).normalize()
       planeRef.current.setFromNormalAndCoplanarPoint(planeNormalRef.current, interactionCenterRef.current)
       const intersection = intersectionRef.current
@@ -237,10 +230,10 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
       intersectionLocal.copy(intersection)
       pointsRef.current.worldToLocal(intersectionLocal)
 
-      const REPULSE_R = 0.8
-      const REPULSE_STR = 0.08
+      const REPULSE_R = 0.6
+      const REPULSE_STR = 0.8
       const SPRING_STRENGTH = 0.05
-      const DAMPING = 0.92
+      const DAMPING = 0.4
 
       const positionAttr = starsGeometry.getAttribute('position') as THREE.BufferAttribute
       const positions = positionAttr.array as Float32Array
@@ -250,7 +243,6 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
         const currentPos = physicsData.current.currentPositions[i]
         const velocity = physicsData.current.velocities[i]
         
-        // Force de répulsion du curseur
         const dx = currentPos.x - intersectionLocal.x
         const dy = currentPos.y - intersectionLocal.y
         const dz = currentPos.z - intersectionLocal.z
@@ -267,20 +259,16 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
           forceZ += (dz / dist) * repulseForce
         }
         
-        // Force de rappel vers la position d'origine (spring)
         const springX = (originalPos.x - currentPos.x) * SPRING_STRENGTH
         const springY = (originalPos.y - currentPos.y) * SPRING_STRENGTH
         const springZ = (originalPos.z - currentPos.z) * SPRING_STRENGTH
         
-        // Appliquer les forces à la vélocité
         velocity.x += forceX + springX
         velocity.y += forceY + springY
         velocity.z += forceZ + springZ
         
-        // Damping (amortissement)
         velocity.multiplyScalar(DAMPING)
         
-        // Mettre à jour la position
         currentPos.add(velocity)
 
         positions[i * 3] = currentPos.x
