@@ -17,7 +17,9 @@ import { CurveParticles } from './scene/CurveParticles'
 import { Stars } from './scene/Stars'
 import { OrbitingRocks } from './scene/OrbitingRocks'
 import { UnderwaterProjectsCarousel } from './scene/UnderwaterProjectsCarousel'
+import type { ProjectPopoverPayload } from './scene/UnderwaterProjectsCarousel'
 import { useAudio } from '@/hooks/useAudio'
+import { useUnderwater } from '@/contexts/UnderwaterContext'
 
 class EffectsManager {
   private static instance: EffectsManager
@@ -36,20 +38,25 @@ export default function Scene({
   onUnderwaterToggle, 
   isUnderwater, 
   isInSpace, 
+  instantSpaceEntry,
   underwaterRequest, 
   volumes, 
 }: { 
   onUnderwaterToggle: (value: boolean) => void
   isUnderwater: boolean
   isInSpace: boolean
+  instantSpaceEntry?: boolean
   underwaterRequest?: { toUnderwater: boolean; id: number } | null
   volumes?: { [key: string]: number }
 }) {
+    const { isMuted } = useUnderwater()
   // Minimal state: only what absolutely needs to trigger re-renders
   const [curvePosition, setCurvePosition] = useState<THREE.Vector3 | null>(null)
   const [curveObject, setCurveObject] = useState<THREE.Object3D | null>(null)
   const [curveStarPosition, setCurveStarPosition] = useState<THREE.Vector3 | null>(null)
   const [showTransitionOverlay, setShowTransitionOverlay] = useState(false)
+  const [hoverProjectPopover, setHoverProjectPopover] = useState<ProjectPopoverPayload | null>(null)
+  const [detailProjectPopover, setDetailProjectPopover] = useState<ProjectPopoverPayload | null>(null)
 
   // All animation state lives in refs to prevent re-renders
   const transitionStateRef = useRef({
@@ -66,15 +73,16 @@ export default function Scene({
   const sceneRef = useRef<THREE.Scene | null>(null)
   const fpsTrackerRef = useRef<number[]>([])
   const textMaskRef = useRef<HTMLDivElement>(null)
-  const { initAudio, playSound, stopSound } = useAudio()
+    const { initAudio, playSound, stopSound, setVolume } = useAudio()
   
   const effectsManager = useMemo(() => EffectsManager.getInstance(), [])
   const ULTRA_FOG = useMemo(() => ({ near: 0.005, far: 0.45 }), [])
   const DEFAULT_UNDERWATER_FOG = useMemo(() => ({ near: 10, far: 150 }), [])
+  const INITIAL_CAMERA_POSITION = useMemo(() => new THREE.Vector3(-20, -10, -10), [])
   const overlayLines = useMemo(() => [
     { text: 'gobelins student', weight: 300 },
     { text: 'freelancer', weight: 300 },
-    { text: 'creative developer', weight: 600 },
+    { text: 'creative developer', weight: 300 },
   ], [])
   const overlayTextStyle = useMemo(() => ({
     fontFamily: '"Mabry Pro", sans-serif',
@@ -102,6 +110,7 @@ export default function Scene({
       mainSceneBackSound: 0.3,
       mainScenePlusSound: 0.25,
       underwaterSceneBackSound: 0.2,
+      spaceSceneBackSound: 0.25,
     }
     
     initAudio('mainSceneBackSound', {
@@ -119,24 +128,80 @@ export default function Scene({
       volume: volumeSettings.underwaterSceneBackSound,
       loop: true,
     })
+    initAudio('spaceSceneBackSound', {
+      url: '/sounds/spaceSceneBackSound.mp3',
+      volume: volumeSettings.spaceSceneBackSound,
+      loop: true,
+    })
   }, [initAudio, volumes])
+
+  // Start main scene sounds on mount (after user interaction from loader)
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      if (isMuted) return
+      playSound('mainSceneBackSound')
+      playSound('mainScenePlusSound')
+      window.removeEventListener('click', handleFirstInteraction)
+      window.removeEventListener('keydown', handleFirstInteraction)
+    }
+
+    // Try to play sounds immediately
+    if (!isMuted) {
+      playSound('mainSceneBackSound')
+      playSound('mainScenePlusSound')
+    }
+
+    // If blocked, wait for first user interaction
+    window.addEventListener('click', handleFirstInteraction)
+    window.addEventListener('keydown', handleFirstInteraction)
+
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction)
+      window.removeEventListener('keydown', handleFirstInteraction)
+    }
+  }, [isMuted, playSound])
+
+  // Mute/unmute all sounds
+  useEffect(() => {
+    if (isMuted) {
+      stopSound('mainSceneBackSound')
+      stopSound('mainScenePlusSound')
+      stopSound('underwaterSceneBackSound')
+      stopSound('spaceSceneBackSound')
+    } else {
+      // Resume sounds based on current state
+      if (isInSpace) {
+        playSound('spaceSceneBackSound')
+      } else if (isUnderwater) {
+        playSound('underwaterSceneBackSound')
+      } else {
+        playSound('mainSceneBackSound')
+        playSound('mainScenePlusSound')
+      }
+    }
+  }, [isMuted, isInSpace, isUnderwater, playSound, stopSound])
 
   // Audio sync only
   useEffect(() => {
+    if (isMuted) return // Don't change audio if muted
+    
     if (isInSpace) {
       stopSound('mainSceneBackSound')
       stopSound('mainScenePlusSound')
       stopSound('underwaterSceneBackSound')
+      playSound('spaceSceneBackSound')
     } else if (isUnderwater) {
       stopSound('mainSceneBackSound')
       stopSound('mainScenePlusSound')
+      stopSound('spaceSceneBackSound')
       playSound('underwaterSceneBackSound')
     } else {
       playSound('mainSceneBackSound')
       playSound('mainScenePlusSound')
       stopSound('underwaterSceneBackSound')
+      stopSound('spaceSceneBackSound')
     }
-  }, [isUnderwater, isInSpace, playSound, stopSound])
+  }, [isUnderwater, isInSpace, isMuted, playSound, stopSound])
 
   // Main transition orchestration - all animation logic lives here, preventing re-renders
   useEffect(() => {
@@ -319,6 +384,12 @@ export default function Scene({
     if (!isInSpace || transitionStateRef.current.isTransitioning) return
 
     if (cameraRef.current) {
+      if (instantSpaceEntry) {
+        cameraRef.current.position.set(0, 200, 30)
+        transitionStateRef.current.isTransitioning = false
+        return
+      }
+
       transitionStateRef.current.isTransitioning = true
       gsap.to(cameraRef.current.position, {
         x: 0,
@@ -331,7 +402,7 @@ export default function Scene({
         }
       })
     }
-  }, [isInSpace])
+  }, [isInSpace, instantSpaceEntry])
 
   useEffect(() => {
     let lastTime = performance.now()
@@ -421,6 +492,8 @@ export default function Scene({
   }, [isInSpace])
 
   const transState = transitionStateRef.current
+  const activeProjectPreview = detailProjectPopover || hoverProjectPopover
+  const hasDetailProject = Boolean(detailProjectPopover)
 
   return (
     <div 
@@ -439,6 +512,9 @@ export default function Scene({
         onCreated={({ camera, scene }) => {
           cameraRef.current = camera
           sceneRef.current = scene
+          if (isInSpace && instantSpaceEntry) {
+            camera.position.set(0, 200, 30)
+          }
         }}
       >
         <color attach="background" args={['#000']} />
@@ -447,11 +523,12 @@ export default function Scene({
         <ambientLight intensity={!transState.isTransitioning && isUnderwater ? 2 : 0.3} />
         
         <CameraFollowMouse 
-          initialPosition={new THREE.Vector3(-20, -10, -10)}
+          initialPosition={INITIAL_CAMERA_POSITION}
           curvePosition={curvePosition} 
           curveStarPosition={curveStarPosition}
           scrollOffset={transState.scrollOffset}
           isInSpace={isInSpace}
+          lockSpaceCamera={Boolean(instantSpaceEntry && isInSpace)}
         />
         <CurveRotation curveObject={curveObject} />
         
@@ -475,6 +552,8 @@ export default function Scene({
               <UnderwaterProjectsCarousel
                 isActive={!isInSpace}
                 centerPosition={curvePosition}
+                onHoverPopoverChange={setHoverProjectPopover}
+                onDetailPopoverChange={setDetailProjectPopover}
               />
               <CurveParticles curvePosition={curvePosition} isUnderwater={true} />
             </>
@@ -549,6 +628,187 @@ export default function Scene({
           className="absolute inset-0 pointer-events-none bg-white"
           style={{ opacity: 0, zIndex: 10 }}
         />
+      )}
+
+      {isUnderwater && !isInSpace && (
+        <div
+          className="fixed pointer-events-none z-30"
+          style={{
+            left: '50%',
+            bottom: '34px',
+            transform: `translate(-50%, ${activeProjectPreview ? '0px' : '10px'})`,
+            opacity: activeProjectPreview ? 1 : 0,
+            visibility: activeProjectPreview ? 'visible' : 'hidden',
+            transition: 'opacity 0.28s ease, transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.28s ease'
+          }}
+        >
+          {activeProjectPreview && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.8rem',
+                padding: '0.55rem 0.9rem',
+                borderRadius: '0.5rem',
+                border: '1px solid rgba(144, 148, 255, 0.65)',
+                background: 'rgba(244, 246, 255, 0.96)',
+                boxShadow: '0 8px 20px rgba(16, 22, 48, 0.14)',
+                minWidth: '230px'
+              }}
+            >
+              <img
+                src={activeProjectPreview.imageUrl}
+                alt={activeProjectPreview.title}
+                width={38}
+                height={38}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  objectFit: 'cover',
+                  borderRadius: '0.35rem',
+                  flexShrink: 0
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'Mabry, sans-serif',
+                  color: '#1d1f2c',
+                  fontSize: '13px',
+                  lineHeight: 1.2,
+                  letterSpacing: '0.01em',
+                  textTransform: 'uppercase'
+                }}
+              >
+                {activeProjectPreview.title}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isUnderwater && !isInSpace && (
+        <>
+          <div
+            className="fixed pointer-events-none z-20"
+            style={{
+              left: 'max(0vw, 0px)',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              background: 'rgba(224, 226, 238, 0.58)',
+              backdropFilter: 'blur(7px)',
+              opacity: hasDetailProject ? 1 : 0,
+              visibility: hasDetailProject ? 'visible' : 'hidden',
+              transition: 'opacity 0.28s ease, visibility 0.28s ease'
+            }}
+          />
+          <aside
+            className="fixed pointer-events-none z-30"
+            style={{
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: 'min(35vw, 470px)',
+              background: 'rgba(245, 245, 248, 0.98)',
+              borderRight: '1px solid rgba(48, 56, 112, 0.12)',
+              padding: '24px 24px 28px',
+              overflow: 'hidden',
+              opacity: hasDetailProject ? 1 : 0,
+              visibility: hasDetailProject ? 'visible' : 'hidden',
+              transform: `translateX(${hasDetailProject ? '0px' : '-20px'})`,
+              transition: 'opacity 0.3s ease, transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.3s ease'
+            }}
+          >
+            {detailProjectPopover && (
+              <>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: '#8d97ff',
+                    fontFamily: 'Mabry, sans-serif',
+                    fontSize: '22px',
+                    fontWeight: 400,
+                    letterSpacing: '0.01em',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  {detailProjectPopover.title}
+                </h3>
+
+                <div
+                  style={{
+                    marginTop: '28px',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(22, 22, 34, 0.08)'
+                  }}
+                >
+                  {detailProjectPopover.detailVideoUrl ? (
+                    <video
+                      src={detailProjectPopover.detailVideoUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{
+                        width: '100%',
+                        height: '280px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={detailProjectPopover.detailImageUrl || detailProjectPopover.imageUrl}
+                      alt={detailProjectPopover.title}
+                      style={{
+                        width: '100%',
+                        height: '280px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  )}
+                </div>
+
+                {detailProjectPopover.detailImageUrl && (
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(22, 22, 34, 0.08)'
+                    }}
+                  >
+                    <img
+                      src={detailProjectPopover.detailImageUrl}
+                      alt={`${detailProjectPopover.title} still`}
+                      style={{
+                        width: '100%',
+                        height: '180px',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
+                )}
+
+                <p
+                  style={{
+                    margin: '24px 0 0',
+                    color: '#282b34',
+                    fontFamily: 'Mabry, sans-serif',
+                    fontSize: '17px',
+                    lineHeight: 1.45,
+                    letterSpacing: '0.005em'
+                  }}
+                >
+                  {detailProjectPopover.description}
+                </p>
+              </>
+            )}
+          </aside>
+        </>
       )}
 
       <div 

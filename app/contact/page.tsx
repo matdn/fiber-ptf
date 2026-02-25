@@ -1,6 +1,7 @@
 'use client'
 
 import Header from '@/components/Header'
+import { CustomCursor } from '@/components/CustomCursor'
 import { useEffect, useRef } from 'react'
 
 const SVG_W = 2072
@@ -103,19 +104,44 @@ export default function ContactPage() {
       }
       let spawnIntervalId = scheduleSpawn()
 
-      const mouse = { x: -9999, y: -9999 }
+      const mouse = {
+        x: -9999,
+        y: -9999,
+        speed: 0,
+        lastX: -9999,
+        lastY: -9999,
+        lastT: performance.now(),
+      }
       const REPULSE_R = 250
       const REPULSE_STR = 0.05
 
       const onMouseMove = (e: MouseEvent) => {
         const r = canvas.getBoundingClientRect()
-        mouse.x = e.clientX - r.left
-        mouse.y = e.clientY - r.top
+        const nextX = e.clientX - r.left
+        const nextY = e.clientY - r.top
+        const now = performance.now()
+        const dt = Math.max(1, now - mouse.lastT)
+        const dist = Math.hypot(nextX - mouse.lastX, nextY - mouse.lastY)
+        mouse.speed = dist / dt
+        mouse.lastX = nextX
+        mouse.lastY = nextY
+        mouse.lastT = now
+        mouse.x = nextX
+        mouse.y = nextY
       }
       const onTouchMove = (e: TouchEvent) => {
         const r = canvas.getBoundingClientRect()
-        mouse.x = e.touches[0].clientX - r.left
-        mouse.y = e.touches[0].clientY - r.top
+        const nextX = e.touches[0].clientX - r.left
+        const nextY = e.touches[0].clientY - r.top
+        const now = performance.now()
+        const dt = Math.max(1, now - mouse.lastT)
+        const dist = Math.hypot(nextX - mouse.lastX, nextY - mouse.lastY)
+        mouse.speed = dist / dt
+        mouse.lastX = nextX
+        mouse.lastY = nextY
+        mouse.lastT = now
+        mouse.x = nextX
+        mouse.y = nextY
       }
       const onClick = (e: MouseEvent) => {
         const r = canvas.getBoundingClientRect()
@@ -222,7 +248,7 @@ export default function ContactPage() {
           width: '100%',
           height: '100%',
           display: 'block',
-          cursor: 'crosshair',
+          cursor: 'none',
         }}
       />
 
@@ -255,6 +281,7 @@ export default function ContactPage() {
             textDecoration: 'underline',
           }}><a href="/">contact me here!</a></h2>
       </div>
+      <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />
      
     </main>
   )

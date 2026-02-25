@@ -18,7 +18,7 @@ export default function AudioControls({ volumes, onVolumeChange }: AudioControls
 
   return (
     <div className="fixed bottom-6 left-6 z-20 pointer-events-auto">
-      <div className="flex flex-col gap-3">
+      {/* <div className="flex flex-col gap-3">
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
@@ -49,7 +49,7 @@ export default function AudioControls({ volumes, onVolumeChange }: AudioControls
             ))}
           </div>
         )}
-      </div>
+      </div> */}
     </div>
   )
 }

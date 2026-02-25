@@ -48,10 +48,12 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
 
 export default function Header({
   isUnderwater = false,
+  isInSpace = false,
   onSpaceToggle,
   onWorkToggle
 }: {
   isUnderwater?: boolean
+  isInSpace?: boolean
   onSpaceToggle?: (value: boolean) => void
   onWorkToggle?: () => void
 }) {
@@ -159,12 +161,11 @@ export default function Header({
 
   return (
     <>
-      <header ref={header} className={`${isUnderwater ? ' md:bottom-0' : 'md:top-2 '} fixed z-50 w-full ${animClass} w-32 h-32 md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: 'difference' }}>
+      <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: 'difference' }}>
         {/* Desktop Menu */}
-        <nav className="hidden md:block left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Mabry, sans-serif' }}>
-          <ul className="flex w-full justify-around items-center gap-4">
-           
-            <li className="w-10 h-10 rounded-full overflow-hidden">
+        <nav className="group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Mabry, sans-serif' }}>
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full overflow-hidden">
               <a href="/">
                 <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
                   <ambientLight intensity={100.5} />
@@ -172,42 +173,55 @@ export default function Header({
                   <MiniCurve opacity={curveOpacity} scale={curveScale} rotationY={curveRotation} />
                 </Canvas>
               </a>
-            </li>
-            <li>
+            </div>
+
+            <div className="flex items-center uppercase gap-4 overflow-hidden max-w-0 ml-0 opacity-0 -translate-x-2 pointer-events-none transition-all 
+            duration-800 ease-out group-hover:max-w-[320px] group-hover:ml-4 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto">
               {onWorkToggle ? (
                 <button
                   type="button"
-                  onClick={onWorkToggle}
-                  className="text-white/80 hover:text-white transition-colors"
+                  onClick={() => {
+                    if (isInSpace) {
+                      window.location.href = '/?underwater=1'
+                      return
+                    }
+                    onWorkToggle()
+                  }}
+                  className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
                 >
                   works
                 </button>
               ) : (
-                <Link href="/?underwater=1" className="text-white/80 hover:text-white transition-colors">
+                <Link href="/?underwater=1" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
                   works
                 </Link>
               )}
-            </li>
-            
-            
-            
-            <li>
+
               {onSpaceToggle ? (
-                <button type="button" onClick={() => onSpaceToggle?.(true)} className="text-white/80 hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isUnderwater) {
+                      window.location.href = '/?space=1'
+                      return
+                    }
+                    onSpaceToggle?.(true)
+                  }}
+                  className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
+                >
                   about
                 </button>
               ) : (
-                <Link href="/about" className="text-white/80 hover:text-white transition-colors">
+                <Link href="/?space=1" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
                   about
                 </Link>
               )}
-            </li>
-            <li>
-              <a href="/contact" className="text-white/80 hover:text-white transition-colors">
+
+              <a href="/contact" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
                 contact
               </a>
-            </li>
-          </ul>
+            </div>
+          </div>
         </nav>
         
         {/* Mobile Menu Button */}
@@ -247,6 +261,10 @@ export default function Header({
                     className="text-white/80 hover:text-white transition-colors block text-lg text-left"
                     onClick={() => {
                       setIsMobileMenuOpen(false)
+                      if (isInSpace) {
+                        window.location.href = '/?underwater=1'
+                        return
+                      }
                       onWorkToggle()
                     }}
                   >
@@ -269,6 +287,10 @@ export default function Header({
                     className="text-white/80 hover:text-white transition-colors block text-lg text-left"
                     onClick={() => {
                       setIsMobileMenuOpen(false)
+                      if (isUnderwater) {
+                        window.location.href = '/?space=1'
+                        return
+                      }
                       onSpaceToggle?.(true)
                     }}
                   >
@@ -276,7 +298,7 @@ export default function Header({
                   </button>
                 ) : (
                   <Link
-                    href="/about"
+                    href="/?space=1"
                     className="text-white/80 hover:text-white transition-colors block text-lg"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

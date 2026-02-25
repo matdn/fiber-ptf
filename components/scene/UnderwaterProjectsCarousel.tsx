@@ -4,7 +4,18 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import { PROJECT_IMAGE_URLS } from '@/lib/projectImages'
+import { PROJECTS } from '@/lib/projectImages'
+import type { ThreeEvent } from '@react-three/fiber'
+
+export type ProjectPopoverPayload = {
+  title: string
+  imageUrl: string
+  detailImageUrl?: string
+  detailVideoUrl?: string
+  description: string
+  x: number
+  y: number
+}
 
 function wrap(value: number, range: number) {
   return ((value % range) + range) % range
@@ -26,20 +37,26 @@ type ShaderLike = {
 
 export function UnderwaterProjectsCarousel({
   isActive,
-  centerPosition
+  centerPosition,
+  onHoverPopoverChange,
+  onDetailPopoverChange,
 }: {
   isActive: boolean
   centerPosition: THREE.Vector3 | null
+  onHoverPopoverChange?: (payload: ProjectPopoverPayload | null) => void
+  onDetailPopoverChange?: (payload: ProjectPopoverPayload | null) => void
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const planeRefs = useRef<Array<THREE.Mesh | null>>([])
+  const hoveredIndexRef = useRef<number | null>(null)
+  const selectedIndexRef = useRef<number | null>(null)
 
   const { camera } = useThree()
 
-  const textureUrls = useMemo(() => [...PROJECT_IMAGE_URLS] as string[], [])
+  const textureUrls = useMemo(() => PROJECTS.map((project) => project.imageUrl), [])
   const textures = useTexture(textureUrls) as THREE.Texture[]
 
-  const itemCount = 14
+  const itemCount = PROJECTS.length
   const spacing = 6.2
   const radius = 18
   const sizeMultiplier = 2.6
@@ -72,6 +89,25 @@ export function UnderwaterProjectsCarousel({
     []
   )
 
+  const buildPopoverPayload = (
+    item: { title: string; imageUrl: string; detailImageUrl?: string; detailVideoUrl?: string; description: string },
+    event: ThreeEvent<MouseEvent | PointerEvent>,
+    offsetX: number
+  ): ProjectPopoverPayload => {
+    const x = event.nativeEvent.clientX + offsetX
+    const y = event.nativeEvent.clientY
+
+    return {
+      title: item.title,
+      imageUrl: item.imageUrl,
+      detailImageUrl: item.detailImageUrl,
+      detailVideoUrl: item.detailVideoUrl,
+      description: item.description,
+      x,
+      y,
+    }
+  }
+
   const bendOnBeforeCompile = (shader: ShaderLike) => {
     shader.uniforms.bendRadius = { value: radius }
 
@@ -91,7 +127,8 @@ export function UnderwaterProjectsCarousel({
 
   const items = useMemo(() => {
     return Array.from({ length: itemCount }, (_, index) => {
-      const texture = textures[index % textures.length]
+      const project = PROJECTS[index]
+      const texture = textures[index]
       const image = texture.image as { width?: number; height?: number } | undefined
       const imgW = typeof image?.width === 'number' ? image.width : 1
       const imgH = typeof image?.height === 'number' ? image.height : 1
@@ -105,10 +142,15 @@ export function UnderwaterProjectsCarousel({
         texture,
         width: targetWidth,
         height: targetHeight,
-        phase: index * 0.9
+        phase: index * 0.9,
+        title: project.title,
+        description: project.description,
+        imageUrl: project.imageUrl,
+        detailImageUrl: project.detailImageUrl,
+        detailVideoUrl: project.detailVideoUrl
       }
     })
-  }, [textures])
+  }, [itemCount, textures])
 
   useEffect(() => {
     if (!isActive) return
@@ -220,15 +262,58 @@ export function UnderwaterProjectsCarousel({
     }
   })
 
+  useEffect(() => {
+    if (isActive) return
+    onHoverPopoverChange?.(null)
+    onDetailPopoverChange?.(null)
+  }, [isActive, onDetailPopoverChange, onHoverPopoverChange])
+
+  useEffect(() => {
+    return () => {
+      onHoverPopoverChange?.(null)
+      onDetailPopoverChange?.(null)
+    }
+  }, [onDetailPopoverChange, onHoverPopoverChange])
+
   if (!isActive) return null
 
   return (
-    <group ref={groupRef}>
+    <group
+      ref={groupRef}
+      onPointerMissed={() => {
+        hoveredIndexRef.current = null
+        selectedIndexRef.current = null
+        onHoverPopoverChange?.(null)
+        onDetailPopoverChange?.(null)
+      }}
+    >
       {items.map((item) => (
         <mesh
           key={item.index}
           ref={(node) => {
             planeRefs.current[item.index] = node
+          }}
+          onPointerOver={(event) => {
+            event.stopPropagation()
+            hoveredIndexRef.current = item.index
+            onHoverPopoverChange?.(buildPopoverPayload(item, event, 18))
+          }}
+          onPointerOut={() => {
+            if (hoveredIndexRef.current === item.index) {
+              hoveredIndexRef.current = null
+              onHoverPopoverChange?.(null)
+            }
+          }}
+          onClick={(event) => {
+            event.stopPropagation()
+            const isClosing = selectedIndexRef.current === item.index
+            selectedIndexRef.current = isClosing ? null : item.index
+            hoveredIndexRef.current = item.index
+            if (isClosing) {
+              onDetailPopoverChange?.(null)
+            } else {
+              onDetailPopoverChange?.(buildPopoverPayload(item, event, 200))
+            }
           }}
         >
           <planeGeometry args={[item.width, item.height, widthSegments, 1]} />

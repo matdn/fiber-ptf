@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 
 interface AudioConfig {
   url: string
@@ -11,41 +11,53 @@ interface AudioConfig {
 export function useAudio() {
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
-  const initAudio = (key: string, config: AudioConfig) => {
+  const initAudio = useCallback((key: string, config: AudioConfig) => {
     if (!audioRefs.current[key]) {
       const audio = new Audio(config.url)
       audio.loop = config.loop ?? true
       audio.volume = config.volume
       audioRefs.current[key] = audio
     }
-  }
+  }, [])
 
-  const playSound = (key: string) => {
+  const playSound = useCallback((key: string) => {
     if (audioRefs.current[key]) {
-      audioRefs.current[key].play().catch(() => {
-        // Autoplay policy restriction
-      })
+      const playPromise = audioRefs.current[key].play()
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.log('Audio autoplay blocked for', key, '- waiting for user interaction')
+        })
+      }
     }
-  }
+  }, [])
 
-  const stopSound = (key: string) => {
+  const stopSound = useCallback((key: string) => {
     if (audioRefs.current[key]) {
       audioRefs.current[key].pause()
       audioRefs.current[key].currentTime = 0
     }
-  }
+  }, [])
 
-  const setVolume = (key: string, volume: number) => {
+  const setVolume = useCallback((key: string, volume: number) => {
     if (audioRefs.current[key]) {
       audioRefs.current[key].volume = volume
     }
-  }
+  }, [])
+
+  const resumeAll = useCallback(() => {
+    Object.values(audioRefs.current).forEach(audio => {
+      if (!audio.paused) {
+        audio.play().catch(() => {})
+      }
+    })
+  }, [])
 
   return {
     initAudio,
     playSound,
     stopSound,
     setVolume,
+    resumeAll,
   }
 }
 

@@ -1,0 +1,37 @@
+[
+  {
+    "title": "Altitude 101",
+    "imageUrl": "/imagesProject/alt101/alt101_2.png",
+    "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
+    "detailVideoUrl": "/imagesProject/alt101/alt101_video_2.mp4",
+    "description": "Direction visuelle et expérience immersive du projet Altitude 101, entre identité 3D, motion et narration interactive."
+  },
+  {
+    "title": "Neon Commerce",
+    "imageUrl": "/imagesProject/img2.png",
+    "detailImageUrl": null,
+    "detailVideoUrl": null,
+    "description": "Expérience e-commerce premium avec navigation cinématique, transitions produit et focus performance web."
+  },
+  {
+    "title": "Astra Dashboard",
+    "imageUrl": "/imagesProject/img3.png",
+    "detailImageUrl": null,
+    "detailVideoUrl": null,
+    "description": "Dashboard data-centric avec visualisations temps réel, composants modulaires et UX orientée décision."
+  },
+  {
+    "title": "Wave Studio",
+    "imageUrl": "/imagesProject/img4.png",
+    "detailImageUrl": null,
+    "detailVideoUrl": null,
+    "description": "Plateforme créative pour studio digital: vitrine projets, pipeline média, et direction artistique interactive."
+  },
+  {
+    "title": "Orbit Labs",
+    "imageUrl": "/imagesProject/img5.png",
+    "detailImageUrl": null,
+    "detailVideoUrl": null,
+    "description": "Landing expérimentale avec shader FX, micro-interactions et architecture front pensée pour le scale."
+  }
+]

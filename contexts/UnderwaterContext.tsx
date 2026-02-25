@@ -7,6 +7,8 @@ interface UnderwaterContextType {
   setIsUnderwater: (value: boolean) => void
   isInSpace: boolean
   setIsInSpace: (value: boolean) => void
+    isMuted: boolean
+    setIsMuted: (value: boolean) => void
 }
 
 const UnderwaterContext = createContext<UnderwaterContextType | undefined>(undefined)
@@ -14,9 +16,10 @@ const UnderwaterContext = createContext<UnderwaterContextType | undefined>(undef
 export function UnderwaterProvider({ children }: { children: ReactNode }) {
   const [isUnderwater, setIsUnderwater] = useState(false)
   const [isInSpace, setIsInSpace] = useState(false)
+    const [isMuted, setIsMuted] = useState(false)
 
   return (
-    <UnderwaterContext.Provider value={{ isUnderwater, setIsUnderwater, isInSpace, setIsInSpace }}>
+      <UnderwaterContext.Provider value={{ isUnderwater, setIsUnderwater, isInSpace, setIsInSpace, isMuted, setIsMuted }}>
       {children}
     </UnderwaterContext.Provider>
   )

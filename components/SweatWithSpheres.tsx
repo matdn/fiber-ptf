@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useRef, useMemo, useEffect } from 'react'
 import * as THREE from 'three'
+import { useUnderwater } from '@/contexts/UnderwaterContext'
 
 type SweatWithSpheresProps = {
   interactionCenter?: [number, number, number]
@@ -15,11 +16,17 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
   const pointsRef = useRef<THREE.Points>(null)
   const modelRef = useRef<THREE.Object3D>(null)
   const { camera } = useThree()
+  const { isMuted } = useUnderwater()
   const interactionCenterRef = useRef(new THREE.Vector3(...interactionCenter))
   const planeRef = useRef(new THREE.Plane())
   const planeNormalRef = useRef(new THREE.Vector3())
   const intersectionRef = useRef(new THREE.Vector3())
   const intersectionLocalRef = useRef(new THREE.Vector3())
+  const audioPoolRef = useRef<HTMLAudioElement[]>([])
+  const audioPoolIndexRef = useRef(0)
+  const lastChimeAtRef = useRef(0)
+  const previousPointerLocalRef = useRef(new THREE.Vector3())
+  const hasPointerSampleRef = useRef(false)
 
   const originalPositions = useMemo(() => {
   const positions: THREE.Vector3[] = []
@@ -216,7 +223,58 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
       interactionCenterRef.current.set(interactionCenter[0], interactionCenter[1], interactionCenter[2])
     }, [interactionCenter])
 
-  useFrame((state) => {
+  useEffect(() => {
+    const poolSize = 12
+    const pool: HTMLAudioElement[] = []
+
+    for (let i = 0; i < poolSize; i++) {
+      const audio = new Audio('/sounds/starSound.mp3')
+      audio.preload = 'auto'
+      audio.volume = 0.2
+      pool.push(audio)
+    }
+
+    audioPoolRef.current = pool
+
+    return () => {
+      pool.forEach((audio) => {
+        audio.pause()
+        audio.src = ''
+      })
+      audioPoolRef.current = []
+    }
+  }, [])
+
+  const stopAllChimes = () => {
+    audioPoolRef.current.forEach((audio) => {
+      audio.pause()
+      audio.currentTime = 0
+    })
+  }
+
+  const playChime = (intensity: number, cursorSpeed: number) => {
+    if (isMuted || audioPoolRef.current.length === 0) return
+    if (cursorSpeed < 0.08) return
+
+    const now = performance.now()
+    const cooldown = intensity > 5 ? 24 : intensity > 3 ? 34 : 46
+    if (now - lastChimeAtRef.current < cooldown) return
+    lastChimeAtRef.current = now
+
+    const audio = audioPoolRef.current[audioPoolIndexRef.current]
+    audioPoolIndexRef.current = (audioPoolIndexRef.current + 1) % audioPoolRef.current.length
+
+    audio.currentTime = Math.random() * 0.07
+    audio.volume = Math.min(0.36, 0.12 + intensity * 0.024 + Math.min(cursorSpeed, 0.8) * 0.08)
+    audio.play().catch(() => {})
+  }
+
+  useEffect(() => {
+    if (!isMuted) return
+    stopAllChimes()
+  }, [isMuted])
+
+  useFrame((state, delta) => {
    
     if (pointsRef.current) {
       const raycaster = new THREE.Raycaster()
@@ -230,6 +288,14 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
       intersectionLocal.copy(intersection)
       pointsRef.current.worldToLocal(intersectionLocal)
 
+      let cursorSpeed = 0
+      if (hasPointerSampleRef.current) {
+        const pointerDelta = intersectionLocal.distanceTo(previousPointerLocalRef.current)
+        cursorSpeed = pointerDelta / Math.max(delta, 0.0001)
+      }
+      previousPointerLocalRef.current.copy(intersectionLocal)
+      hasPointerSampleRef.current = true
+
       const REPULSE_R = 0.6
       const REPULSE_STR = 0.8
       const SPRING_STRENGTH = 0.05
@@ -237,6 +303,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
 
       const positionAttr = starsGeometry.getAttribute('position') as THREE.BufferAttribute
       const positions = positionAttr.array as Float32Array
+      let interactionEnergy = 0
       
       for (let i = 0; i < originalPositions.positions.length; i++) {
         const originalPos = originalPositions.positions[i]
@@ -257,6 +324,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
           forceX += (dx / dist) * repulseForce
           forceY += (dy / dist) * repulseForce
           forceZ += (dz / dist) * repulseForce
+          interactionEnergy += repulseForce
         }
         
         const springX = (originalPos.x - currentPos.x) * SPRING_STRENGTH
@@ -278,6 +346,12 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
 
       positionAttr.needsUpdate = true
       starsMaterial.uniforms.time.value = state.clock.elapsedTime
+
+      if (cursorSpeed < 0.08) {
+        stopAllChimes()
+      } else if (interactionEnergy > 0.7) {
+        playChime(interactionEnergy, cursorSpeed)
+      }
     }
   })
 

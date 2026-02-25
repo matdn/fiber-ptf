@@ -55,6 +55,12 @@ body {
   overflow-y: hidden;
 }
 
+html,
+body,
+* {
+  cursor: none !important;
+}
+
 /* Cacher la scrollbar sur tous les navigateurs */
 html {
   scrollbar-width: none; /* Firefox */

@@ -10,6 +10,7 @@ interface CameraFollowMouseProps {
   curveStarPosition: THREE.Vector3 | null
   scrollOffset: number
   isInSpace: boolean
+  lockSpaceCamera?: boolean
 }
 
 export function CameraFollowMouse({ 
@@ -17,7 +18,8 @@ export function CameraFollowMouse({
   curvePosition,
   curveStarPosition,
   scrollOffset,
-  isInSpace
+  isInSpace,
+  lockSpaceCamera = false
 }: CameraFollowMouseProps) {
   const { camera, pointer } = useThree()
   const frameCount = useRef(0)
@@ -31,12 +33,13 @@ export function CameraFollowMouse({
   const dragStartY = useRef(0)
   const dragOffset = useRef(0)
   const dragTarget = useRef(0)
+  const didSnapSpaceLookAt = useRef(false)
   
   useEffect(() => {
-    if (initialPosition) {
+    if (initialPosition && !isInSpace) {
       camera.position.copy(initialPosition)
     }
-  }, [initialPosition, camera])
+  }, [camera, initialPosition, isInSpace])
   
   useEffect(() => {
     // Initialiser le lookAtTarget avec la position actuelle
@@ -49,14 +52,28 @@ export function CameraFollowMouse({
     // Détecter le début de la transition vers l'espace
     if (isInSpace && !previousIsInSpace.current) {
       transitionStartTime.current = Date.now()
-      spaceBasePosition.current = null
+      didSnapSpaceLookAt.current = false
+
+      if (curveStarPosition) {
+        lookAtTarget.current.copy(curveStarPosition)
+        didSnapSpaceLookAt.current = true
+      } else if (curvePosition) {
+        lookAtTarget.current.copy(curvePosition)
+      }
+
+      if (lockSpaceCamera) {
+        camera.position.set(0, 200, 30)
+        spaceBasePosition.current = new THREE.Vector3(0, 200, 30)
+      } else {
+        spaceBasePosition.current = null
+      }
       dragOffset.current = 0
       dragTarget.current = 0
       // Reset smooth pointer so it lerps gently from center when space starts
-      smoothPointer.current.set(0, 0)
+      smoothPointer.current.set(pointer.x, pointer.y)
     }
     previousIsInSpace.current = isInSpace
-  }, [isInSpace])
+  }, [camera, isInSpace, lockSpaceCamera, pointer.x, pointer.y, curvePosition, curveStarPosition])
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -105,7 +122,8 @@ export function CameraFollowMouse({
 
     if (isInSpace) {
       const timeSinceTransition = (Date.now() - transitionStartTime.current) / 1000
-      if (timeSinceTransition > 4 && !spaceBasePosition.current) {
+      const activationDelay = lockSpaceCamera ? 0 : 4
+      if (timeSinceTransition > activationDelay && !spaceBasePosition.current) {
         spaceBasePosition.current = camera.position.clone()
         // seed smoothPointer so first frame has no jump
         smoothPointer.current.set(pointer.x, pointer.y)
@@ -130,6 +148,13 @@ export function CameraFollowMouse({
       }
     }
     
+    if (isInSpace && curveStarPosition && !didSnapSpaceLookAt.current) {
+      lookAtTarget.current.copy(curveStarPosition)
+      didSnapSpaceLookAt.current = true
+      camera.lookAt(lookAtTarget.current)
+      return
+    }
+
     // Gestion du lookAt avec lerp progressif pour tous les modes
     const targetPosition = (isInSpace && curveStarPosition) ? curveStarPosition : (curvePosition || lookAtTarget.current)
     
@@ -137,8 +162,8 @@ export function CameraFollowMouse({
     let lerpFactor = 0.3
     if (isInSpace && curveStarPosition) {
       const timeSinceTransition = (Date.now() - transitionStartTime.current) / 1000
-      // Commencer très lent (0.005) et accélérer progressivement jusqu'à 0.03 sur 3 secondes
-      lerpFactor = Math.min(0.005 + (timeSinceTransition / 4) * 0.025, 0.03)
+      // Snap visuel rapide à l'entrée en space, puis interpolation douce
+      lerpFactor = timeSinceTransition < 0.35 ? 1 : 0.06
     }
     
     // Lerp progressif vers la cible

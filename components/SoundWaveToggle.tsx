@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
+import { useUnderwater } from '@/contexts/UnderwaterContext'
 
 export default function SoundWaveToggle() {
+  const { isMuted, setIsMuted } = useUnderwater()
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isPlaying, setIsPlaying] = useState(true)
   const animationIdRef = useRef<number>(0)
   const timeRef = useRef(0)
   const audioContextRef = useRef<AudioContext | null>(null)
@@ -83,7 +84,7 @@ export default function SoundWaveToggle() {
     const animate = () => {
       timeRef.current += 1
 
-      if (isPlaying) {
+        if (!isMuted) {
         // Animate wave
         drawWave(timeRef.current, 1)
       } else {
@@ -99,10 +100,10 @@ export default function SoundWaveToggle() {
     return () => {
       cancelAnimationFrame(animationIdRef.current)
     }
-  }, [isPlaying])
+    }, [isMuted])
 
   const toggleSound = () => {
-    setIsPlaying(!isPlaying)
+      setIsMuted(!isMuted)
 
     // Play a small beep sound for feedback
     if (!audioContextRef.current) {
@@ -125,7 +126,7 @@ export default function SoundWaveToggle() {
     osc.connect(gain)
     gain.connect(audioContext.destination)
 
-    osc.frequency.value = !isPlaying ? 400 : 600
+      osc.frequency.value = isMuted ? 400 : 600
     osc.type = 'sine'
 
     gain.gain.setValueAtTime(0.1, now)
@@ -143,8 +144,8 @@ export default function SoundWaveToggle() {
       type="button"
       onClick={toggleSound}
       className="flex items-center justify-center w-[55px] h-[55px] rounded-full hover:bg-white/10 transition-colors duration-200 pointer-events-auto cursor-pointer overflow-visible"
-      aria-label={isPlaying ? 'Mute sound' : 'Unmute sound'}
-      title={isPlaying ? 'Mute' : 'Unmute'}
+        aria-label={isMuted ? 'Unmute sound' : 'Mute sound'}
+        title={isMuted ? 'Unmute' : 'Mute'}
     >
       <canvas
         ref={canvasRef}
