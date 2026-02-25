@@ -18,6 +18,7 @@ import { Stars } from './scene/Stars'
 import { OrbitingRocks } from './scene/OrbitingRocks'
 import { UnderwaterProjectsCarousel } from './scene/UnderwaterProjectsCarousel'
 import type { ProjectPopoverPayload } from './scene/UnderwaterProjectsCarousel'
+import type { ProjectDetailBlock } from '@/lib/projectImages'
 import { useAudio } from '@/hooks/useAudio'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 
@@ -494,6 +495,11 @@ export default function Scene({
   const transState = transitionStateRef.current
   const activeProjectPreview = detailProjectPopover || hoverProjectPopover
   const hasDetailProject = Boolean(detailProjectPopover)
+  const detailBlocks: ProjectDetailBlock[] = detailProjectPopover
+    ? detailProjectPopover.detailBlocks && detailProjectPopover.detailBlocks.length > 0
+      ? detailProjectPopover.detailBlocks
+      : [{ type: 'text', content: detailProjectPopover.description }]
+    : []
 
   return (
     <div 
@@ -735,76 +741,76 @@ export default function Scene({
                   {detailProjectPopover.title}
                 </h3>
 
-                <div
-                  style={{
-                    marginTop: '28px',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(22, 22, 34, 0.08)'
-                  }}
-                >
-                  {detailProjectPopover.detailVideoUrl ? (
-                    <video
-                      src={detailProjectPopover.detailVideoUrl}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      style={{
-                        width: '100%',
-                        height: '280px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
-                    />
-                  ) : (
-                    <img
-                      src={detailProjectPopover.detailImageUrl || detailProjectPopover.imageUrl}
-                      alt={detailProjectPopover.title}
-                      style={{
-                        width: '100%',
-                        height: '280px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
-                    />
-                  )}
-                </div>
+                {detailBlocks.map((block, index) => {
+                  if (block.type === 'video') {
+                    return (
+                      <div
+                        key={`video-${index}`}
+                        style={{
+                          marginTop: index === 0 ? '28px' : '16px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: '1px solid rgba(22, 22, 34, 0.08)'
+                        }}
+                      >
+                        <video
+                          src={block.src}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          style={{
+                            width: '100%',
+                            height: `${block.height || 280}px`,
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                      </div>
+                    )
+                  }
 
-                {detailProjectPopover.detailImageUrl && (
-                  <div
-                    style={{
-                      marginTop: '16px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      border: '1px solid rgba(22, 22, 34, 0.08)'
-                    }}
-                  >
-                    <img
-                      src={detailProjectPopover.detailImageUrl}
-                      alt={`${detailProjectPopover.title} still`}
-                      style={{
-                        width: '100%',
-                        height: '180px',
-                        objectFit: 'cover',
-                        display: 'block'
-                      }}
-                    />
-                  </div>
-                )}
+                  if (block.type === 'image') {
+                    return (
+                      <div
+                        key={`image-${index}`}
+                        style={{
+                          marginTop: index === 0 ? '28px' : '16px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: '1px solid rgba(22, 22, 34, 0.08)'
+                        }}
+                      >
+                        <img
+                          src={block.src}
+                          alt={`${detailProjectPopover.title} media ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: `${block.height || 220}px`,
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                      </div>
+                    )
+                  }
 
-                <p
-                  style={{
-                    margin: '24px 0 0',
-                    color: '#282b34',
-                    fontFamily: 'Mabry, sans-serif',
-                    fontSize: '17px',
-                    lineHeight: 1.45,
-                    letterSpacing: '0.005em'
-                  }}
-                >
-                  {detailProjectPopover.description}
-                </p>
+                  return (
+                    <p
+                      key={`text-${index}`}
+                      style={{
+                        margin: index === 0 ? '28px 0 0' : '16px 0 0',
+                        color: '#282b34',
+                        fontFamily: 'Mabry, sans-serif',
+                        fontSize: '17px',
+                        lineHeight: 1.45,
+                        letterSpacing: '0.005em'
+                      }}
+                    >
+                      {block.content}
+                    </p>
+                  )
+                })}
               </>
             )}
           </aside>

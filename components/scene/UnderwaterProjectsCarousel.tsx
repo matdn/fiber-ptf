@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { PROJECTS } from '@/lib/projectImages'
+import type { ProjectDetailBlock } from '@/lib/projectImages'
 import type { ThreeEvent } from '@react-three/fiber'
 
 export type ProjectPopoverPayload = {
@@ -13,6 +14,7 @@ export type ProjectPopoverPayload = {
   detailImageUrl?: string
   detailVideoUrl?: string
   description: string
+  detailBlocks?: ProjectDetailBlock[]
   x: number
   y: number
 }
@@ -90,7 +92,7 @@ export function UnderwaterProjectsCarousel({
   )
 
   const buildPopoverPayload = (
-    item: { title: string; imageUrl: string; detailImageUrl?: string; detailVideoUrl?: string; description: string },
+    item: { title: string; imageUrl: string; detailImageUrl?: string; detailVideoUrl?: string; description: string; detailBlocks?: ProjectDetailBlock[] },
     event: ThreeEvent<MouseEvent | PointerEvent>,
     offsetX: number
   ): ProjectPopoverPayload => {
@@ -103,6 +105,7 @@ export function UnderwaterProjectsCarousel({
       detailImageUrl: item.detailImageUrl,
       detailVideoUrl: item.detailVideoUrl,
       description: item.description,
+      detailBlocks: item.detailBlocks,
       x,
       y,
     }
@@ -147,7 +150,8 @@ export function UnderwaterProjectsCarousel({
         description: project.description,
         imageUrl: project.imageUrl,
         detailImageUrl: project.detailImageUrl,
-        detailVideoUrl: project.detailVideoUrl
+        detailVideoUrl: project.detailVideoUrl,
+        detailBlocks: project.detailBlocks
       }
     })
   }, [itemCount, textures])

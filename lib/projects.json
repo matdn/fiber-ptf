@@ -4,6 +4,26 @@
     "imageUrl": "/imagesProject/alt101/alt101_2.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_2.mp4",
+    "detailBlocks": [
+      {
+        "type": "video",
+        "src": "/imagesProject/alt101/alt101_video_2.mp4",
+        "height": 280
+      },
+      {
+        "type": "text",
+        "content": "Direction visuelle et expérience immersive du projet Altitude 101, entre identité 3D, motion et narration interactive."
+      },
+      {
+        "type": "image",
+        "src": "/imagesProject/alt101/alt101_3.png",
+        "height": 180
+      },
+      {
+        "type": "text",
+        "content": "Based in Paris, Altitude 101 is a video production studio crafting immersive films for Apple Vision Pro, shot with Blackmagic cameras to deliver cinematic experiences beyond the screen."
+      }
+    ],
     "description": "Direction visuelle et expérience immersive du projet Altitude 101, entre identité 3D, motion et narration interactive."
   },
   {
@@ -11,6 +31,12 @@
     "imageUrl": "/imagesProject/img2.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
+    "detailBlocks": [
+      {
+        "type": "text",
+        "content": "Expérience e-commerce premium avec navigation cinématique, transitions produit et focus performance web."
+      }
+    ],
     "description": "Expérience e-commerce premium avec navigation cinématique, transitions produit et focus performance web."
   },
   {
@@ -18,6 +44,12 @@
     "imageUrl": "/imagesProject/img3.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
+    "detailBlocks": [
+      {
+        "type": "text",
+        "content": "Dashboard data-centric avec visualisations temps réel, composants modulaires et UX orientée décision."
+      }
+    ],
     "description": "Dashboard data-centric avec visualisations temps réel, composants modulaires et UX orientée décision."
   },
   {
@@ -25,6 +57,12 @@
     "imageUrl": "/imagesProject/img4.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
+    "detailBlocks": [
+      {
+        "type": "text",
+        "content": "Plateforme créative pour studio digital: vitrine projets, pipeline média, et direction artistique interactive."
+      }
+    ],
     "description": "Plateforme créative pour studio digital: vitrine projets, pipeline média, et direction artistique interactive."
   },
   {
@@ -32,6 +70,12 @@
     "imageUrl": "/imagesProject/img5.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
+    "detailBlocks": [
+      {
+        "type": "text",
+        "content": "Landing expérimentale avec shader FX, micro-interactions et architecture front pensée pour le scale."
+      }
+    ],
     "description": "Landing expérimentale avec shader FX, micro-interactions et architecture front pensée pour le scale."
   }
 ]
