@@ -19,35 +19,40 @@ export function OrbitingRocks({ centerPosition, isVisible }: OrbitingRocksProps)
       mesh: THREE.Object3D; 
       radius: number; 
       speed: number; 
-      angle: number; 
-      orbitAxis: THREE.Vector3;
-      orbitPlaneNormal: THREE.Vector3;
+      angle: number;
+      // Pre-computed orbit basis vectors — avoids per-frame allocations.
+      baseX: number; baseY: number; baseZ: number;
+      secondX: number; secondY: number; secondZ: number;
     }[] = []
     
     scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         const clonedMesh = child.clone()
+        const radius = 15 + Math.random() * 20
+        const speed = 0.2 + Math.random() * 0.3
+        const angle = Math.random() * Math.PI * 2
         
-        // Paramètres orbitaux uniques pour chaque rock
-        const radius = 15 + Math.random() * 20 // Rayon orbital entre 15 et 35
-        const speed = 0.2 + Math.random() * 0.3 // Vitesse de rotation
-        const angle = Math.random() * Math.PI * 2 // Angle initial
-        
-        // Créer un axe d'orbite aléatoire dans l'espace 3D
         const orbitAxis = new THREE.Vector3(
           Math.random() - 0.5,
           Math.random() - 0.5,
           Math.random() - 0.5
         ).normalize()
         
-        // Créer un vecteur perpendiculaire pour définir le plan d'orbite
         const orbitPlaneNormal = new THREE.Vector3(
           Math.random() - 0.5,
           Math.random() - 0.5,
           Math.random() - 0.5
         ).normalize()
         
-        meshes.push({ mesh: clonedMesh, radius, speed, angle, orbitAxis, orbitPlaneNormal })
+        // Pre-compute and freeze the two basis vectors for this orbit.
+        const base = new THREE.Vector3().crossVectors(orbitAxis, orbitPlaneNormal).normalize()
+        const second = new THREE.Vector3().crossVectors(orbitAxis, base).normalize()
+        
+        meshes.push({
+          mesh: clonedMesh, radius, speed, angle,
+          baseX: base.x, baseY: base.y, baseZ: base.z,
+          secondX: second.x, secondY: second.y, secondZ: second.z,
+        })
       }
     })
     
@@ -56,36 +61,19 @@ export function OrbitingRocks({ centerPosition, isVisible }: OrbitingRocksProps)
   
   useFrame((state) => {
     if (rocksGroupRef.current && isVisible) {
-      rockMeshes.forEach((rock, index) => {
-        // Calculer la position orbitale
-        const currentAngle = rock.angle + state.clock.elapsedTime * rock.speed
-        
-        // Créer un vecteur de base dans le plan de l'orbite
-        const baseVector = new THREE.Vector3()
-          .crossVectors(rock.orbitAxis, rock.orbitPlaneNormal)
-          .normalize()
-        
-        // Créer un second vecteur perpendiculaire pour compléter le plan
-        const secondVector = new THREE.Vector3()
-          .crossVectors(rock.orbitAxis, baseVector)
-          .normalize()
-        
-        // Position dans le plan orbital
-        const orbitalX = Math.cos(currentAngle) * baseVector.x + Math.sin(currentAngle) * secondVector.x
-        const orbitalY = Math.cos(currentAngle) * baseVector.y + Math.sin(currentAngle) * secondVector.y
-        const orbitalZ = Math.cos(currentAngle) * baseVector.z + Math.sin(currentAngle) * secondVector.z
-        
-        // Position finale autour du centre
-        const x = centerPosition.x + orbitalX * rock.radius
-        const y = centerPosition.y + orbitalY * rock.radius
-        const z = centerPosition.z + orbitalZ * rock.radius
-        
-        rock.mesh.position.set(x, y, z)
-        
-        // Rotation du rock sur lui-même
+      const t = state.clock.elapsedTime
+      for (const rock of rockMeshes) {
+        const a = rock.angle + t * rock.speed
+        const cos = Math.cos(a)
+        const sin = Math.sin(a)
+        rock.mesh.position.set(
+          centerPosition.x + (cos * rock.baseX + sin * rock.secondX) * rock.radius,
+          centerPosition.y + (cos * rock.baseY + sin * rock.secondY) * rock.radius,
+          centerPosition.z + (cos * rock.baseZ + sin * rock.secondZ) * rock.radius,
+        )
         rock.mesh.rotation.x += 0.01
         rock.mesh.rotation.y += 0.015
-      })
+      }
     }
   })
   

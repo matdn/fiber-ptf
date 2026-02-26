@@ -1,341 +1,855 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
-import { useTexture } from '@react-three/drei'
-import * as THREE from 'three'
-import { PROJECTS } from '@/lib/projectImages'
-import type { ProjectDetailBlock } from '@/lib/projectImages'
-import type { ThreeEvent } from '@react-three/fiber'
+import { useTexture } from "@react-three/drei";
+import type { ThreeEvent } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
+import type { ProjectDetailBlock, ProjectItem } from "@/lib/projectImages";
+import { PROJECTS } from "@/lib/projectImages";
 
 export type ProjectPopoverPayload = {
-  title: string
-  imageUrl: string
-  detailImageUrl?: string
-  detailVideoUrl?: string
-  description: string
-  detailBlocks?: ProjectDetailBlock[]
-  x: number
-  y: number
-}
+  title: string;
+  imageUrl: string;
+  detailImageUrl?: string;
+  detailVideoUrl?: string;
+  description: string;
+  detailBlocks?: ProjectDetailBlock[];
+  x: number;
+  y: number;
+};
 
-function wrap(value: number, range: number) {
-  return ((value % range) + range) % range
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function smoothstep(edge0: number, edge1: number, x: number) {
-  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1)
-  return t * t * (3 - 2 * t)
-}
+export type FullscreenProjectPayload = {
+  title: string;
+  imageUrl: string;
+};
 
 type ShaderLike = {
-  uniforms: Record<string, { value: unknown }>
-  vertexShader: string
+  uniforms: Record<string, { value: unknown }>;
+  vertexShader: string;
+};
+
+type CarouselProject = (typeof PROJECTS)[number];
+
+type TubeCell = {
+  cellIndex: number;
+  rowIndex: number;
+  baseRow: number;
+  rowY: number;
+  baseTheta: number;
+  phase: number;
+  width: number;
+  height: number;
+  project: CarouselProject;
+  texture: THREE.Texture;
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function wrapToNearest(value: number, around: number, period: number) {
+  if (period <= 0) return value;
+  return value + Math.round((around - value) / period) * period;
+}
+
+function shortestAngleDiff(from: number, to: number) {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
 }
 
 export function UnderwaterProjectsCarousel({
   isActive,
   centerPosition,
   onHoverPopoverChange,
-  onDetailPopoverChange,
+  onFullscreenProjectChange,
+  onCameraMotionLockChange,
+  onCameraLookAtLockChange,
+  onProjectOpen,
+  onProjectClose,
+  closeRequestId,
+  forceCloseRequestId,
 }: {
-  isActive: boolean
-  centerPosition: THREE.Vector3 | null
-  onHoverPopoverChange?: (payload: ProjectPopoverPayload | null) => void
-  onDetailPopoverChange?: (payload: ProjectPopoverPayload | null) => void
+  isActive: boolean;
+  centerPosition: THREE.Vector3 | null;
+  onHoverPopoverChange?: (payload: ProjectPopoverPayload | null) => void;
+  onFullscreenProjectChange?: (
+    payload: FullscreenProjectPayload | null,
+  ) => void;
+  onCameraMotionLockChange?: (isLocked: boolean) => void;
+  onCameraLookAtLockChange?: (target: THREE.Vector3 | null) => void;
+  onProjectOpen?: (project: ProjectItem) => void;
+  onProjectClose?: () => void;
+  closeRequestId?: number;
+  forceCloseRequestId?: number;
 }) {
-  const groupRef = useRef<THREE.Group>(null)
-  const planeRefs = useRef<Array<THREE.Mesh | null>>([])
-  const hoveredIndexRef = useRef<number | null>(null)
-  const selectedIndexRef = useRef<number | null>(null)
+  const groupRef = useRef<THREE.Group>(null);
+  const cellGroupRefs = useRef<Array<THREE.Group | null>>([]);
+  const planeRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const hitPlaneRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const planeShaderRefs = useRef<Array<ShaderLike | null>>([]);
+  const backdropRef = useRef<THREE.Mesh>(null);
 
-  const { camera } = useThree()
+  const hoveredCellRef = useRef<number | null>(null);
+  const pendingCellRef = useRef<number | null>(null);
+  const selectedCellRef = useRef<number | null>(null);
+  const selectedProgressRef = useRef<number[]>([]);
+  const selectImpulseStartRef = useRef<number[]>([]);
+  const projectOpenFiredRef = useRef(new Set<number>());
+  // Cells currently animating back out — onProjectClose fires once selectedProgress < 0.05.
+  const projectClosingRef = useRef(new Set<number>());
 
-  const textureUrls = useMemo(() => PROJECTS.map((project) => project.imageUrl), [])
-  const textures = useTexture(textureUrls) as THREE.Texture[]
+  const scrollTargetRef = useRef(0);
+  const scrollCurrentRef = useRef(0);
+  const spinVelocityRef = useRef(0);
+  const naturalDirRef = useRef(1);
+  const angleRef = useRef(0);
+  const clockElapsedRef = useRef(0);
 
-  const itemCount = PROJECTS.length
-  const spacing = 6.2
-  const radius = 18
-  const sizeMultiplier = 2.6
-  // Plus la valeur est grande, plus ça "glisse" en spirale autour du tube en descendant.
-  const turnsPerLoop = 1.6
-  const spiralSpeed = 0.25
-  const tubeRotationSpeed = 0.45
-  const focusRange = 4.8
-  const focusRadiusBump = 1.2
-  const cameraPull = 8.5
+  const { camera } = useThree();
 
-  const wheelSensitivity = 0.00055
-  const maxDownVelocity = -0.28
-  const maxUpVelocity = 0.06
-  const inertia = 0.63
+  const textureUrls = useMemo(
+    () => PROJECTS.map((project) => project.imageUrl),
+    [],
+  );
+  const textures = useTexture(textureUrls) as THREE.Texture[];
 
-  const widthSegments = 48
+  const rows = 3;
+  const cols = 6;
+  const repeatCount = 3;
+  const totalRows = rows * repeatCount;
+
+  const radius = 12;
+  const ySpacing = 7.4;
+  const loopRows = rows % 2 === 0 ? rows : rows * 2;
+  const loopHeight = loopRows * ySpacing;
+  const rowSpeeds = useMemo(() => {
+    return Array.from({ length: rows }, (_, row) => {
+      const t = rows <= 1 ? 0 : row / (rows - 1);
+      return 0.65 + t * 0.9;
+    });
+  }, []);
+
+  const tileHeight = 3.5;
+  const cameraPull = 8.5;
+
+  const wheelScrollSensitivity = 0.002;
+  const wheelSpinSensitivity = 0.0035;
+  const spinDamping = 0.92;
+  const baseSpinSpeed = 0.24;
+
+  const widthSegments = 80;
+  const heightSegments = 50;
+  const tubeScale = 1.8;
+  const selectedPullDistance = 2.6;
+  const selectedScaleBoost = 0.06;
+  const selectedInDamping = 4.8;
+  const selectedOutDamping = 6.2;
+  const fullscreenDistance = 3.5  ;
+  const minDistanceToCamera = 2.8;
+
+  const orientationHelper = useMemo(() => new THREE.Object3D(), []);
 
   const tmp = useMemo(
     () => ({
-      fallback: new THREE.Vector3(0, 0, 0),
-      cameraLocal: new THREE.Vector3(),
-      cameraXZ: new THREE.Vector3(),
-      axisLocal: new THREE.Vector3(),
-      axisWorld: new THREE.Vector3(),
-      radial: new THREE.Vector3(),
+      fallback: new THREE.Vector3(),
+      targetPos: new THREE.Vector3(),
       dirWorld: new THREE.Vector3(),
-      targetPos: new THREE.Vector3()
+      cameraLocal: new THREE.Vector3(),
+      planeNormal: new THREE.Vector3(0, 0, 1),
+      cameraForward: new THREE.Vector3(0, 0, -1),
+      cameraWorldTarget: new THREE.Vector3(),
+      targetLocal: new THREE.Vector3(),
+      targetQuaternion: new THREE.Quaternion(),
+      focusWorld: new THREE.Vector3(),
     }),
-    []
-  )
+    [],
+  );
+
+  const cells = useMemo<TubeCell[]>(() => {
+    const out: TubeCell[] = [];
+
+    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+      const baseRow = rowIndex % rows;
+      const rowOffset = baseRow % 2 === 0 ? 0 : 0.5;
+      const rowY = (rowIndex - (totalRows - 1) / 2) * ySpacing;
+
+      for (let col = 0; col < cols; col++) {
+        const projectIndex = (baseRow * cols + col) % PROJECTS.length;
+        const project = PROJECTS[projectIndex];
+        const texture = textures[projectIndex];
+
+        const image = texture.image as
+          | { width?: number; height?: number }
+          | undefined;
+        const imgW = typeof image?.width === "number" ? image.width : 1;
+        const imgH = typeof image?.height === "number" ? image.height : 1;
+        const aspect = imgH > 0 ? imgW / imgH : 1;
+
+        out.push({
+          cellIndex: out.length,
+          rowIndex,
+          baseRow,
+          rowY,
+          baseTheta: ((col + rowOffset) / cols) * Math.PI * 2,
+          phase: rowIndex * 0.37 + col * 0.61,
+          width: tileHeight * aspect,
+          height: tileHeight,
+          project,
+          texture,
+        });
+      }
+    }
+
+    return out;
+  }, [textures, totalRows]);
 
   const buildPopoverPayload = (
-    item: { title: string; imageUrl: string; detailImageUrl?: string; detailVideoUrl?: string; description: string; detailBlocks?: ProjectDetailBlock[] },
+    project: CarouselProject,
     event: ThreeEvent<MouseEvent | PointerEvent>,
-    offsetX: number
+    offsetX: number,
   ): ProjectPopoverPayload => {
-    const x = event.nativeEvent.clientX + offsetX
-    const y = event.nativeEvent.clientY
-
     return {
-      title: item.title,
-      imageUrl: item.imageUrl,
-      detailImageUrl: item.detailImageUrl,
-      detailVideoUrl: item.detailVideoUrl,
-      description: item.description,
-      detailBlocks: item.detailBlocks,
-      x,
-      y,
-    }
-  }
+      title: project.title,
+      imageUrl: project.imageUrl,
+      detailImageUrl: project.detailImageUrl,
+      detailVideoUrl: project.detailVideoUrl,
+      description: project.description,
+      detailBlocks: project.detailBlocks,
+      x: event.nativeEvent.clientX + offsetX,
+      y: event.nativeEvent.clientY,
+    };
+  };
 
-  const bendOnBeforeCompile = (shader: ShaderLike) => {
-    shader.uniforms.bendRadius = { value: radius }
-
-    shader.vertexShader = shader.vertexShader.replace(
-      '#include <common>',
-      `#include <common>\nuniform float bendRadius;`
-    )
+  const clothOnBeforeCompile = (shader: ShaderLike, cellIndex: number) => {
+    shader.uniforms.uPull = { value: 0 };
+    shader.uniforms.uBulge = { value: 0 };
+    planeShaderRefs.current[cellIndex] = shader;
 
     shader.vertexShader = shader.vertexShader.replace(
-      '#include <begin_vertex>',
-      `#include <begin_vertex>\nfloat theta = transformed.x / bendRadius;\nfloat s = sin(theta);\nfloat c = cos(theta);\ntransformed.x = s * bendRadius;\ntransformed.z += (1.0 - c) * bendRadius;`
-    )
-  }
+      "#include <common>",
+      `#include <common>\nuniform float uPull;\nuniform float uBulge;`,
+    );
 
-  const scrollOffset = useRef(0)
-  const scrollVelocity = useRef(0)
-
-  const items = useMemo(() => {
-    return Array.from({ length: itemCount }, (_, index) => {
-      const project = PROJECTS[index]
-      const texture = textures[index]
-      const image = texture.image as { width?: number; height?: number } | undefined
-      const imgW = typeof image?.width === 'number' ? image.width : 1
-      const imgH = typeof image?.height === 'number' ? image.height : 1
-      const aspect = imgH > 0 ? imgW / imgH : 1
-
-      const targetHeight = 2.8 * sizeMultiplier
-      const targetWidth = targetHeight * aspect
-
-      return {
-        index,
-        texture,
-        width: targetWidth,
-        height: targetHeight,
-        phase: index * 0.9,
-        title: project.title,
-        description: project.description,
-        imageUrl: project.imageUrl,
-        detailImageUrl: project.detailImageUrl,
-        detailVideoUrl: project.detailVideoUrl,
-        detailBlocks: project.detailBlocks
-      }
-    })
-  }, [itemCount, textures])
+    shader.vertexShader = shader.vertexShader.replace(
+      "#include <begin_vertex>",
+      `#include <begin_vertex>
+      vec2 centeredUv = uv - vec2(0.5);
+      float distToCenter = length(centeredUv);
+      float centerFalloff = exp(-distToCenter * distToCenter * 16.0);
+      float midFalloff = exp(-pow((distToCenter - 0.28) * 4.2, 2.0));
+      float ring = exp(-pow((distToCenter - 0.34) * 4.8, 2.0));
+      float edge = clamp(distToCenter / 0.72, 0.0, 1.0);
+      float laggedPull = smoothstep(0.0, 1.0, uPull - edge * 0.35);
+      float centerLead = smoothstep(0.0, 1.0, uPull * 1.15);
+      float pullProfile = mix(laggedPull, centerLead, centerFalloff);
+      float progressivePush =
+        centerFalloff * (0.64 + pullProfile * 0.38) +
+        midFalloff * (0.34 + pullProfile * 0.22) +
+        ring * 0.14;
+      float clothPull = progressivePush * uBulge;
+      float cornerLag = (1.0 - centerFalloff) * (1.0 - pullProfile) * uBulge;
+      vec2 radialDir = distToCenter > 1e-5 ? centeredUv / distToCenter : vec2(0.0);
+      float radialStretch = (centerFalloff * 0.07 + midFalloff * 0.06 + ring * 0.04) * uBulge;
+      float tangentialShear = ring * (uPull * 0.03) * uBulge;
+      transformed.z += clothPull;
+      transformed.z -= cornerLag * 0.11;
+      transformed.x += radialDir.x * radialStretch + centeredUv.y * tangentialShear;
+      transformed.y += radialDir.y * radialStretch - centeredUv.x * tangentialShear;
+      transformed.xy *= 1.0 - (centerFalloff * 0.08 + midFalloff * 0.05) * uBulge;`,
+    );
+  };
 
   useEffect(() => {
-    if (!isActive) return
+    const cellCount = cells.length;
 
-    const onWheel = (e: WheelEvent) => {
-      // Si la page est scrollable, empêcher le scroll natif pour garder le contrôle du carousel.
-      e.preventDefault()
+    selectedProgressRef.current = Array.from(
+      { length: cellCount },
+      (_, index) => selectedProgressRef.current[index] || 0,
+    );
+    selectImpulseStartRef.current = Array.from(
+      { length: cellCount },
+      (_, index) =>
+        selectImpulseStartRef.current[index] || Number.NEGATIVE_INFINITY,
+    );
+    planeShaderRefs.current = Array.from(
+      { length: cellCount },
+      (_, index) => planeShaderRefs.current[index] || null,
+    );
+    planeRefs.current = Array.from(
+      { length: cellCount },
+      (_, index) => planeRefs.current[index] || null,
+    );
+    hitPlaneRefs.current = Array.from(
+      { length: cellCount },
+      (_, index) => hitPlaneRefs.current[index] || null,
+    );
+    cellGroupRefs.current = Array.from(
+      { length: cellCount },
+      (_, index) => cellGroupRefs.current[index] || null,
+    );
+  }, [cells.length]);
 
-      const delta = Math.max(-120, Math.min(120, e.deltaY))
-      // deltaY positif = scroll down => on fait descendre la liste (donc offset -)
-      scrollVelocity.current += (-delta * wheelSensitivity)
-      scrollVelocity.current = Math.max(maxDownVelocity, Math.min(maxUpVelocity, scrollVelocity.current))
+  useEffect(() => {
+    if (!isActive) return;
+
+    const onWheel = (event: WheelEvent) => {
+      // When the project detail view is open let the browser scroll normally.
+      if (projectOpenFiredRef.current.size > 0) return;
+      event.preventDefault();
+      if (selectedCellRef.current !== null || pendingCellRef.current !== null)
+        return;
+
+      scrollTargetRef.current += event.deltaY * wheelScrollSensitivity;
+      spinVelocityRef.current += event.deltaY * wheelSpinSensitivity;
+      spinVelocityRef.current = clamp(spinVelocityRef.current, -2.2, 2.2);
+
+      if (event.deltaY < 0) naturalDirRef.current = -1;
+      else if (event.deltaY > 0) naturalDirRef.current = 1;
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [isActive]);
+
+  useEffect(() => {
+    if (forceCloseRequestId === undefined) return;
+
+    pendingCellRef.current = null;
+    selectedCellRef.current = null;
+    projectOpenFiredRef.current.clear();
+    projectClosingRef.current.clear();
+    onCameraMotionLockChange?.(false);
+    onCameraLookAtLockChange?.(null);
+    onFullscreenProjectChange?.(null);
+  }, [
+    forceCloseRequestId,
+    onCameraLookAtLockChange,
+    onCameraMotionLockChange,
+    onFullscreenProjectChange,
+  ]);
+
+  // Soft close triggered externally (e.g. Back button) — starts the reverse animation.
+  useEffect(() => {
+    if (closeRequestId === undefined) return;
+
+    const openCell = [...projectOpenFiredRef.current][0] ?? -1;
+    if (openCell >= 0) {
+      projectOpenFiredRef.current.delete(openCell);
+      projectClosingRef.current.add(openCell);
     }
-
-    window.addEventListener('wheel', onWheel, { passive: false })
-    return () => window.removeEventListener('wheel', onWheel)
-  }, [isActive])
+    selectedCellRef.current = null;
+    pendingCellRef.current = null;
+    onCameraMotionLockChange?.(false);
+    onCameraLookAtLockChange?.(null);
+  }, [closeRequestId, onCameraLookAtLockChange, onCameraMotionLockChange]);
 
   useFrame((state, delta) => {
-    if (!isActive) return
+    if (!isActive) return;
+    if (!groupRef.current) return;
 
-    // Inertie (feeling flottant)
-    scrollOffset.current += scrollVelocity.current
-    scrollVelocity.current *= inertia
+    const hasSelection = selectedCellRef.current !== null;
+    const hasPendingSelection =
+      pendingCellRef.current !== null && selectedCellRef.current === null;
 
-    // Petit drift continu
-    scrollOffset.current += Math.sin(state.clock.elapsedTime * 0.25) * 0.002
+    if (!hasSelection && !hasPendingSelection) {
+      scrollCurrentRef.current +=
+        (scrollTargetRef.current - scrollCurrentRef.current) * 0.12;
 
-    const total = itemCount * spacing
-    const t = state.clock.elapsedTime
-
-    if (groupRef.current) {
-      if (centerPosition) {
-        tmp.dirWorld.subVectors(camera.position, centerPosition).normalize()
-        tmp.targetPos.copy(centerPosition).addScaledVector(tmp.dirWorld, cameraPull)
-        groupRef.current.position.lerp(tmp.targetPos, 0.08)
-      } else {
-        groupRef.current.position.lerp(tmp.fallback, 0.1)
+      if (scrollCurrentRef.current > loopHeight / 2) {
+        scrollCurrentRef.current -= loopHeight;
+        scrollTargetRef.current -= loopHeight;
+      } else if (scrollCurrentRef.current < -loopHeight / 2) {
+        scrollCurrentRef.current += loopHeight;
+        scrollTargetRef.current += loopHeight;
       }
 
-      // Rotation continue du tube autour de l'axe Y (orbite naturelle)
-      groupRef.current.rotation.y += tubeRotationSpeed * delta
-
-      // Wobble léger (eau)
-      groupRef.current.rotation.x = Math.sin(t * 0.25) * 0.05
-      groupRef.current.rotation.z = Math.cos(t * 0.22) * 0.04
-
-      // Direction caméra en espace local du tube (pour savoir quel côté est "face caméra")
-      tmp.cameraLocal.copy(camera.position)
-      groupRef.current.worldToLocal(tmp.cameraLocal)
-      tmp.cameraXZ.set(tmp.cameraLocal.x, 0, tmp.cameraLocal.z)
-      if (tmp.cameraXZ.lengthSq() > 0.00001) {
-        tmp.cameraXZ.normalize()
-      } else {
-        tmp.cameraXZ.set(0, 0, 1)
-      }
+      spinVelocityRef.current *= spinDamping ** (delta * 60);
+      const spin =
+        baseSpinSpeed * naturalDirRef.current + spinVelocityRef.current;
+      angleRef.current += spin * delta;
     } else {
-      tmp.cameraXZ.set(0, 0, 1)
-    }
+      spinVelocityRef.current = THREE.MathUtils.damp(
+        spinVelocityRef.current,
+        0,
+        8,
+        delta,
+      );
 
-    for (const item of items) {
-      const mesh = planeRefs.current[item.index]
-      if (!mesh) continue
+      if (hasPendingSelection && pendingCellRef.current !== null) {
+        const pendingCell = cells[pendingCellRef.current];
+        if (pendingCell) {
+          if (centerPosition) {
+            tmp.dirWorld
+              .subVectors(camera.position, centerPosition)
+              .normalize();
+            tmp.targetPos
+              .copy(centerPosition)
+              .addScaledVector(tmp.dirWorld, cameraPull);
+            tmp.targetPos.y -= scrollCurrentRef.current;
+            groupRef.current.position.lerp(tmp.targetPos, 0.08);
+          } else {
+            tmp.fallback.set(0, -scrollCurrentRef.current, 0);
+            groupRef.current.position.lerp(tmp.fallback, 0.1);
+          }
 
-      const rawY = item.index * spacing + scrollOffset.current
-      const wrappedY = wrap(rawY + total / 2, total) - total / 2
+          tmp.cameraLocal.copy(camera.position);
+          groupRef.current.worldToLocal(tmp.cameraLocal);
 
-      // Spirale: en descendant, l'objet tourne autour de la curve (glisse le long d'un tube)
-      const baseAngle = (item.index / itemCount) * Math.PI * 2
-      const angle = baseAngle + (wrappedY / spacing) * (Math.PI * 2) * turnsPerLoop + t * spiralSpeed
-      const floatX = Math.sin(t * 0.9 + item.phase) * 0.35
-      const floatY = Math.sin(t * 0.7 + item.phase) * 0.25
-      const floatZ = Math.cos(t * 0.8 + item.phase) * 0.4
+          const desiredTheta = Math.atan2(tmp.cameraLocal.z, tmp.cameraLocal.x);
+          const rowDirection = pendingCell.rowIndex % 2 === 0 ? 1 : -1;
+          const angleFactor = rowSpeeds[pendingCell.baseRow] * rowDirection;
+          const rawTargetAngle =
+            (desiredTheta - pendingCell.baseTheta) / angleFactor;
+          const anglePeriod = (Math.PI * 2) / Math.abs(angleFactor);
+          const targetAngle = wrapToNearest(
+            rawTargetAngle,
+            angleRef.current,
+            anglePeriod,
+          );
 
-      // Focus: plus proche du centre => plus "présent" (sans reculer en Z)
-      const centerFactor = 1 - smoothstep(0, focusRange, Math.abs(wrappedY))
-      tmp.radial.set(Math.cos(angle), 0, Math.sin(angle))
-      const frontness = clamp(tmp.radial.dot(tmp.cameraXZ), 0, 1)
-      const focus = centerFactor * frontness
-      const effectiveRadius = radius + focusRadiusBump * focus
+          camera.getWorldDirection(tmp.cameraForward);
+          tmp.cameraWorldTarget
+            .copy(camera.position)
+            .addScaledVector(tmp.cameraForward, fullscreenDistance);
+          tmp.targetLocal.copy(tmp.cameraWorldTarget);
+          groupRef.current.worldToLocal(tmp.targetLocal);
+          const desiredCameraY = tmp.cameraLocal.y;
+          const pendingFloatY = 0;
 
-      mesh.position.set(
-        tmp.radial.x * effectiveRadius + floatX,
-        wrappedY + floatY,
-        tmp.radial.z * effectiveRadius + floatZ
-      )
+          const targetScroll = wrapToNearest(
+            scrollCurrentRef.current +
+              (pendingCell.rowY + pendingFloatY - desiredCameraY),
+            scrollCurrentRef.current,
+            loopHeight,
+          );
 
-      // Former un tube: les plans regardent l'axe du tube (pas la caméra)
-      if (groupRef.current) {
-        tmp.axisLocal.set(0, wrappedY, 0)
-        tmp.axisWorld.copy(tmp.axisLocal)
-        groupRef.current.localToWorld(tmp.axisWorld)
-        mesh.lookAt(tmp.axisWorld)
+          angleRef.current = THREE.MathUtils.damp(
+            angleRef.current,
+            targetAngle,
+            7.8,
+            delta,
+          );
+          scrollCurrentRef.current = THREE.MathUtils.damp(
+            scrollCurrentRef.current,
+            targetScroll,
+            7.8,
+            delta,
+          );
+          scrollTargetRef.current = scrollCurrentRef.current;
+
+          const alignedTheta =
+            Math.abs(
+              shortestAngleDiff(
+                pendingCell.baseTheta + angleRef.current * angleFactor,
+                desiredTheta,
+              ),
+            ) < 0.03;
+          const alignedY =
+            Math.abs(pendingCell.rowY + pendingFloatY - tmp.cameraLocal.y) <
+            0.02;
+
+          if (alignedTheta && alignedY) {
+            selectedCellRef.current = pendingCell.cellIndex;
+            pendingCellRef.current = null;
+            selectImpulseStartRef.current[pendingCell.cellIndex] =
+              clockElapsedRef.current;
+          }
+        }
       }
-      mesh.rotateZ(Math.sin(t * 0.6 + item.phase) * 0.12)
-      mesh.rotateX(Math.cos(t * 0.55 + item.phase) * 0.06)
-
-      // Mini breathing sur l’échelle
-      const s = (0.9 + focus * 0.35) * (1 + Math.sin(t * 0.5 + item.phase) * 0.03)
-      mesh.scale.set(s, s, 1)
-
-      const material = mesh.material as THREE.MeshStandardMaterial
-    //   material.opacity = 0.35 + focus * 0.65
     }
 
-    // Eviter des gros sauts si l’onglet a freeze
-    if (delta > 0.2) {
-      scrollVelocity.current = 0
+    if (centerPosition) {
+      tmp.dirWorld.subVectors(camera.position, centerPosition).normalize();
+      tmp.targetPos
+        .copy(centerPosition)
+        .addScaledVector(tmp.dirWorld, cameraPull);
+      tmp.targetPos.y -= scrollCurrentRef.current;
+      groupRef.current.position.lerp(tmp.targetPos, 0.08);
+    } else {
+      tmp.fallback.set(0, -scrollCurrentRef.current, 0);
+      groupRef.current.position.lerp(tmp.fallback, 0.1);
     }
-  })
+
+    tmp.cameraLocal.copy(camera.position);
+    groupRef.current.worldToLocal(tmp.cameraLocal);
+
+    const t = state.clock.elapsedTime;
+    clockElapsedRef.current = t;
+
+    for (const cell of cells) {
+      const cellGroup = cellGroupRefs.current[cell.cellIndex];
+      const mesh = planeRefs.current[cell.cellIndex];
+      const hitMesh = hitPlaneRefs.current[cell.cellIndex];
+      if (!cellGroup || !mesh) continue;
+
+      const rowDirection = cell.rowIndex % 2 === 0 ? 1 : -1;
+      const rowAngle =
+        angleRef.current * rowSpeeds[cell.baseRow] * rowDirection;
+      const theta = cell.baseTheta + rowAngle;
+      const selectedTarget = selectedCellRef.current === cell.cellIndex ? 1 : 0;
+      const selectedCurrent = selectedProgressRef.current[cell.cellIndex] || 0;
+      const selectedDamping =
+        selectedTarget > selectedCurrent
+          ? selectedInDamping
+          : selectedOutDamping;
+      const selectedProgress = THREE.MathUtils.damp(
+        selectedCurrent,
+        selectedTarget,
+        selectedDamping,
+        delta,
+      );
+      selectedProgressRef.current[cell.cellIndex] = selectedProgress;
+
+      const impulseStart = selectImpulseStartRef.current[cell.cellIndex];
+      const impulseElapsed = t - impulseStart;
+      const impulse =
+        Number.isFinite(impulseElapsed) && impulseElapsed >= 0
+          ? Math.max(
+              0,
+              Math.exp(-impulseElapsed * 1.9) * Math.sin(impulseElapsed * 10.5),
+            )
+          : 0;
+      const openingEnvelope =
+        selectedTarget === 1
+          ? 4 * selectedProgress * (1 - selectedProgress)
+          : 0;
+      const bulgeStrength = clamp(
+        openingEnvelope * 0.82 + impulse * 0.34,
+        0,
+        1,
+      );
+
+      const isPendingCell = pendingCellRef.current === cell.cellIndex;
+      const isFocusedCell = isPendingCell || selectedTarget === 1;
+      const floatY = isFocusedCell ? 0 : Math.sin(t * 0.7 + cell.phase) * 0.09;
+      const floatZ = Math.cos(t * 0.9 + cell.phase) * 0.06;
+
+      cellGroup.position.set(
+        Math.cos(theta) * radius,
+        cell.rowY + floatY,
+        Math.sin(theta) * radius + floatZ,
+      );
+
+      if (isPendingCell) {
+        // During alignment smoothly slerp to face the camera via quaternion to
+        // avoid Euler flip artefacts when theta crosses ±π boundaries.
+        orientationHelper.position.copy(cellGroup.position);
+        orientationHelper.up.set(0, 1, 0);
+        orientationHelper.lookAt(tmp.cameraLocal);
+        tmp.targetQuaternion.copy(orientationHelper.quaternion);
+        if (cellGroup.quaternion.dot(tmp.targetQuaternion) < 0) {
+          tmp.targetQuaternion.x *= -1;
+          tmp.targetQuaternion.y *= -1;
+          tmp.targetQuaternion.z *= -1;
+          tmp.targetQuaternion.w *= -1;
+        }
+        cellGroup.quaternion.slerp(tmp.targetQuaternion, 0.15);
+      } else if (selectedTarget === 0) {
+        // Regular tube rotation — set directly from theta.
+        cellGroup.rotation.set(0, -(theta + Math.PI / 2), 0);
+      }
+
+      tmp.planeNormal.set(0, 0, 1).applyQuaternion(cellGroup.quaternion);
+      cellGroup.position.addScaledVector(
+        tmp.planeNormal,
+        selectedProgress * selectedPullDistance + impulse * 1.2,
+      );
+
+      const baseScale = 1 + Math.sin(t * 0.45 + cell.phase) * 0.02;
+
+      if (selectedProgress > 0.001) {
+        let viewportHeight = 2;
+        let viewportWidth = 2;
+
+        if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+          const perspectiveCamera = camera as THREE.PerspectiveCamera;
+          const fov = THREE.MathUtils.degToRad(perspectiveCamera.fov);
+          viewportHeight = 2 * Math.tan(fov / 2) * fullscreenDistance;
+          viewportWidth = viewportHeight * perspectiveCamera.aspect;
+        }
+
+        const finalScale =
+          Math.max(viewportWidth / cell.width, viewportHeight / cell.height) /
+          tubeScale;
+        const boostedScale =
+          baseScale *
+          (1 + selectedProgress * selectedScaleBoost + impulse * 0.03);
+        const scale = THREE.MathUtils.lerp(
+          boostedScale,
+          finalScale,
+          selectedProgress,
+        );
+        cellGroup.scale.set(scale, scale, 1);
+
+        camera.getWorldDirection(tmp.cameraForward);
+        tmp.cameraWorldTarget
+          .copy(camera.position)
+          .addScaledVector(tmp.cameraForward, fullscreenDistance);
+        tmp.targetLocal.copy(tmp.cameraWorldTarget);
+        groupRef.current.worldToLocal(tmp.targetLocal);
+        tmp.targetLocal.y = tmp.cameraLocal.y;
+        tmp.dirWorld.subVectors(tmp.targetLocal, tmp.cameraLocal);
+        const targetDistance = tmp.dirWorld.length();
+        if (targetDistance > 1e-4 && targetDistance < minDistanceToCamera) {
+          tmp.dirWorld.multiplyScalar(minDistanceToCamera / targetDistance);
+          tmp.targetLocal.copy(tmp.cameraLocal).add(tmp.dirWorld);
+        }
+
+        orientationHelper.position.copy(cellGroup.position);
+        orientationHelper.up.set(0, 1, 0);
+        orientationHelper.lookAt(tmp.cameraLocal);
+        tmp.targetQuaternion.copy(orientationHelper.quaternion);
+        if (cellGroup.quaternion.dot(tmp.targetQuaternion) < 0) {
+          tmp.targetQuaternion.x *= -1;
+          tmp.targetQuaternion.y *= -1;
+          tmp.targetQuaternion.z *= -1;
+          tmp.targetQuaternion.w *= -1;
+        }
+
+        cellGroup.quaternion.slerp(
+          tmp.targetQuaternion,
+          THREE.MathUtils.clamp(selectedProgress, 0, 1),
+        );
+        cellGroup.position.lerp(tmp.targetLocal, selectedProgress);
+      } else {
+        cellGroup.scale.set(baseScale, baseScale, 1);
+      }
+
+      const material = mesh.material as THREE.MeshBasicMaterial;
+      if (selectedCellRef.current === null) {
+        material.opacity = 1;
+      } else if (selectedCellRef.current === cell.cellIndex) {
+        material.opacity = 1;
+      } else {
+        const activeSelectionProgress =
+          selectedProgressRef.current[selectedCellRef.current] || 0;
+        material.opacity = 1 - activeSelectionProgress * 0.88;
+      }
+
+      mesh.renderOrder = selectedProgress > 0.02 ? 50 : 0;
+      if (hitMesh) {
+        hitMesh.renderOrder = mesh.renderOrder;
+      }
+
+      // Only lock lookAt once the plane is centered (selectedCellRef), not during pending alignment.
+      if (selectedCellRef.current === cell.cellIndex) {
+        cellGroup.getWorldPosition(tmp.focusWorld);
+        onCameraLookAtLockChange?.(tmp.focusWorld.clone());
+
+        // Fire onProjectOpen once when the animation is nearly complete.
+        if (
+          selectedProgress > 0.92 &&
+          !projectOpenFiredRef.current.has(cell.cellIndex)
+        ) {
+          projectOpenFiredRef.current.add(cell.cellIndex);
+          onProjectOpen?.(cell.project);
+        }
+      }
+
+      // Fire onProjectClose once the reverse animation settles (selectedProgress almost 0).
+      if (
+        projectClosingRef.current.has(cell.cellIndex) &&
+        selectedProgress < 0.05
+      ) {
+        projectClosingRef.current.delete(cell.cellIndex);
+        onProjectClose?.();
+      }
+
+      const shader = planeShaderRefs.current[cell.cellIndex];
+      if (shader?.uniforms?.uPull) {
+        shader.uniforms.uPull.value = selectedProgress;
+      }
+      if (shader?.uniforms?.uBulge) {
+        shader.uniforms.uBulge.value = bulgeStrength;
+      }
+    }
+
+    // --- Backdrop: large white plane that fades in behind the selected project image ---
+    const backdrop = backdropRef.current;
+    if (backdrop) {
+      // Find the cell with the highest selectedProgress.
+      let maxProgress = 0;
+      let maxCellIndex = -1;
+      for (let i = 0; i < selectedProgressRef.current.length; i++) {
+        const p = selectedProgressRef.current[i];
+        if (p > maxProgress) { maxProgress = p; maxCellIndex = i; }
+      }
+
+      const backdropMat = backdrop.material as THREE.MeshBasicMaterial;
+      if (maxProgress > 0.001 && maxCellIndex >= 0 && groupRef.current) {
+        const cellGroup = cellGroupRefs.current[maxCellIndex];
+        if (cellGroup) {
+          // Match position and camera-facing orientation of the selected cell.
+          backdrop.position.copy(cellGroup.position);
+          backdrop.quaternion.copy(cellGroup.quaternion);
+
+          // Push 0.5 local units behind the plane (away from camera).
+          tmp.planeNormal.set(0, 0, -1).applyQuaternion(cellGroup.quaternion);
+          backdrop.position.addScaledVector(tmp.planeNormal, 0.5);
+
+          // Scale to fill the full viewport at the plane's depth.
+          if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+            const perspCam = camera as THREE.PerspectiveCamera;
+            const fov = THREE.MathUtils.degToRad(perspCam.fov);
+            const vhWorld = 2 * Math.tan(fov / 2) * fullscreenDistance * 1.8;
+            const vwWorld = vhWorld * perspCam.aspect;
+            // Divide by tubeScale because backdrop is inside the scaled group.
+            backdrop.scale.set(vwWorld / tubeScale, vhWorld / tubeScale, 1);
+          }
+
+          backdropMat.opacity = maxProgress;
+          backdrop.renderOrder = 49;
+          backdrop.visible = true;
+        }
+      } else {
+        backdrop.visible = false;
+        backdropMat.opacity = 0;
+      }
+    }
+  });
 
   useEffect(() => {
-    if (isActive) return
-    onHoverPopoverChange?.(null)
-    onDetailPopoverChange?.(null)
-  }, [isActive, onDetailPopoverChange, onHoverPopoverChange])
+    if (isActive) return;
+
+    onCameraMotionLockChange?.(false);
+    onCameraLookAtLockChange?.(null);
+    onHoverPopoverChange?.(null);
+    onFullscreenProjectChange?.(null);
+  }, [
+    isActive,
+    onCameraLookAtLockChange,
+    onCameraMotionLockChange,
+    onFullscreenProjectChange,
+    onHoverPopoverChange,
+  ]);
 
   useEffect(() => {
     return () => {
-      onHoverPopoverChange?.(null)
-      onDetailPopoverChange?.(null)
-    }
-  }, [onDetailPopoverChange, onHoverPopoverChange])
+      onCameraMotionLockChange?.(false);
+      onCameraLookAtLockChange?.(null);
+      onHoverPopoverChange?.(null);
+      onFullscreenProjectChange?.(null);
+    };
+  }, [
+    onCameraLookAtLockChange,
+    onCameraMotionLockChange,
+    onFullscreenProjectChange,
+    onHoverPopoverChange,
+  ]);
 
-  if (!isActive) return null
+  if (!isActive) return null;
 
   return (
     <group
       ref={groupRef}
+      scale={[tubeScale, tubeScale, tubeScale]}
       onPointerMissed={() => {
-        hoveredIndexRef.current = null
-        selectedIndexRef.current = null
-        onHoverPopoverChange?.(null)
-        onDetailPopoverChange?.(null)
+        const openCells = [...projectOpenFiredRef.current];
+        projectOpenFiredRef.current.clear();
+        for (const idx of openCells) projectClosingRef.current.add(idx);
+        hoveredCellRef.current = null;
+        pendingCellRef.current = null;
+        selectedCellRef.current = null;
+        onCameraMotionLockChange?.(false);
+        onCameraLookAtLockChange?.(null);
+        onHoverPopoverChange?.(null);
+        onFullscreenProjectChange?.(null);
       }}
     >
-      {items.map((item) => (
-        <mesh
-          key={item.index}
+      {/* Backdrop — large white plane that fades in behind the focused project image
+          to hide the rest of the 3D scene and create continuity with the scroll view. */}
+      <mesh ref={backdropRef} visible={false}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </mesh>
+
+      {cells.map((cell) => (
+        <group
+          key={cell.cellIndex}
           ref={(node) => {
-            planeRefs.current[item.index] = node
-          }}
-          onPointerOver={(event) => {
-            event.stopPropagation()
-            hoveredIndexRef.current = item.index
-            onHoverPopoverChange?.(buildPopoverPayload(item, event, 18))
-          }}
-          onPointerOut={() => {
-            if (hoveredIndexRef.current === item.index) {
-              hoveredIndexRef.current = null
-              onHoverPopoverChange?.(null)
-            }
-          }}
-          onClick={(event) => {
-            event.stopPropagation()
-            const isClosing = selectedIndexRef.current === item.index
-            selectedIndexRef.current = isClosing ? null : item.index
-            hoveredIndexRef.current = item.index
-            if (isClosing) {
-              onDetailPopoverChange?.(null)
-            } else {
-              onDetailPopoverChange?.(buildPopoverPayload(item, event, 200))
-            }
+            cellGroupRefs.current[cell.cellIndex] = node;
           }}
         >
-          <planeGeometry args={[item.width, item.height, widthSegments, 1]} />
-          <meshBasicMaterial
-            map={item.texture}
-            transparent
-            // opacity={0.88}
-            // roughness={0.65}
-            // metalness={0.0}
-            // emissive={new THREE.Color('#0a1b3d')}
-            // emissiveIntensity={0.15}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-            toneMapped={false}
-            onBeforeCompile={bendOnBeforeCompile}
-          />
-        </mesh>
+          <mesh
+            ref={(node) => {
+              planeRefs.current[cell.cellIndex] = node;
+            }}
+          >
+            <planeGeometry
+              args={[cell.width, cell.height, widthSegments, heightSegments]}
+            />
+            <meshBasicMaterial
+              map={cell.texture}
+              transparent
+              side={THREE.DoubleSide}
+              depthWrite={false}
+              toneMapped={false}
+              onBeforeCompile={(shader) =>
+                clothOnBeforeCompile(shader as ShaderLike, cell.cellIndex)
+              }
+            />
+          </mesh>
+          {/* Lightweight hit-test mesh to reduce raycast cost on the high-density visual mesh. */}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: React Three Fiber mesh events are intentional here. */}
+          <mesh
+            ref={(node) => {
+              hitPlaneRefs.current[cell.cellIndex] = node;
+            }}
+            onPointerEnter={(event) => {
+              event.stopPropagation();
+              if (hoveredCellRef.current === cell.cellIndex) return;
+              hoveredCellRef.current = cell.cellIndex;
+              onHoverPopoverChange?.(
+                buildPopoverPayload(cell.project, event, 18),
+              );
+            }}
+            onPointerLeave={() => {
+              if (hoveredCellRef.current !== cell.cellIndex) return;
+              hoveredCellRef.current = null;
+              onHoverPopoverChange?.(null);
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              const isClosing =
+                selectedCellRef.current === cell.cellIndex ||
+                pendingCellRef.current === cell.cellIndex;
+
+              pendingCellRef.current = isClosing ? null : cell.cellIndex;
+              selectedCellRef.current = null;
+              hoveredCellRef.current = cell.cellIndex;
+              onCameraMotionLockChange?.(!isClosing);
+              if (isClosing) {
+                onCameraLookAtLockChange?.(null);
+                if (projectOpenFiredRef.current.has(cell.cellIndex)) {
+                  // Move from open → closing; onProjectClose fires in useFrame.
+                  projectOpenFiredRef.current.delete(cell.cellIndex);
+                  projectClosingRef.current.add(cell.cellIndex);
+                } else {
+                  projectOpenFiredRef.current.delete(cell.cellIndex);
+                }
+              }
+              onFullscreenProjectChange?.(null);
+            }}
+          >
+            <planeGeometry args={[cell.width, cell.height, 1, 1]} />
+            <meshBasicMaterial
+              transparent
+              opacity={0}
+              depthWrite={false}
+              depthTest={false}
+              toneMapped={false}
+              side={THREE.DoubleSide}
+              colorWrite={false}
+            />
+          </mesh>
+        </group>
       ))}
     </group>
-  )
+  );
 }
