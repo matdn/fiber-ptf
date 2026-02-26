@@ -45,24 +45,9 @@ export const ProjectDetailView = memo(function ProjectDetailView({
   const firstMedia = mediaBlocks[0] ?? null;
 
   return (
-    <div className="w-full bg-white min-h-screen text-black" style={{ fontFamily: "inherit" }}>
+    <div className="w-full bg-[#F9F9F9] min-h-screen text-black" style={{ fontFamily: "inherit" }}>
 
-      {/* ── Top bar ─────────────────────────────────────────────── */}
-      <div
-        className="flex items-center justify-between px-8 py-5 border-b border-black/10"
-        style={{ fontSize: "0.72rem", letterSpacing: "0.15em" }}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="uppercase tracking-[0.18em] text-black/40 hover:text-black transition-colors"
-          style={{ fontSize: "0.7rem" }}
-        >
-          ← Back
-        </button>
-        <span className="uppercase text-black/30">Work</span>
-      </div>
-
+     
       {/* ── Hero: large title + first media side-by-side ────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[90vh]">
 
