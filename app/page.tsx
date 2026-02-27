@@ -112,7 +112,7 @@ export default function Home() {
         />
       </div>
 
-      <FPSCounter />
+      {/* <FPSCounter /> */}
     </main>
   )
 }

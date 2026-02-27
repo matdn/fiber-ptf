@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, SMAA } from "@react-three/postprocessing";
 import { Fluid } from "@whatisjery/react-fluid-distortion";
 import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import type { ProjectItem } from "@/lib/projectImages";
 import { Water } from "../Water";
 import { CameraFollowMouse } from "./CameraFollowMouse";
 import { CurveParticles } from "./CurveParticles";
@@ -19,7 +20,6 @@ import type {
   ProjectPopoverPayload,
 } from "./UnderwaterProjectsCarousel";
 import { UnderwaterProjectsCarousel } from "./UnderwaterProjectsCarousel";
-import type { ProjectItem } from "@/lib/projectImages";
 
 export const SceneCanvas = memo(function SceneCanvas({
   isUnderwater,
@@ -40,6 +40,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onProjectClose,
   closeRequestId,
   forceCloseRequestId,
+  focusProjectRequest,
   onCreated,
 }: {
   isUnderwater: boolean;
@@ -60,6 +61,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onProjectClose?: () => void;
   closeRequestId?: number;
   forceCloseRequestId: number;
+  focusProjectRequest?: { id: number; project: ProjectItem } | null;
   onCreated: (payload: { camera: THREE.Camera; scene: THREE.Scene }) => void;
 }) {
   const fallbackOrbitCenter = useMemo(() => new THREE.Vector3(0, 200, 0), []);
@@ -84,9 +86,9 @@ export const SceneCanvas = memo(function SceneCanvas({
         <Bloom
           key="bloom"
           intensity={transitionState.bloomIntensity}
-          luminanceThreshold={0.98}
-          luminanceSmoothing={0.2}
-          radius={0.4}
+          luminanceThreshold={0.82}
+          luminanceSmoothing={0.3}
+          radius={0.5}
           mipmapBlur={false}
         />,
       );
@@ -121,13 +123,13 @@ export const SceneCanvas = memo(function SceneCanvas({
   return (
     <Canvas
       camera={{ position: [-20, -10, -10], fov: 40 }}
-      dpr={[1, 1.5]}
+      dpr={[1, 2]}
       gl={{
         antialias: false,
         powerPreference: "high-performance",
         alpha: false,
         logarithmicDepthBuffer: false,
-        precision: "mediump",
+        precision: "highp",
       }}
       onCreated={({ camera, scene }) => {
         onCreated({ camera, scene });
@@ -193,6 +195,7 @@ export const SceneCanvas = memo(function SceneCanvas({
               onCameraMotionLockChange={setIsCameraLockedByCarousel}
               onCameraLookAtLockChange={handleCameraLookAtLockChange}
               forceCloseRequestId={forceCloseRequestId}
+              focusProjectRequest={focusProjectRequest}
             />
             <CurveParticles curvePosition={curvePosition} isUnderwater={true} />
           </>

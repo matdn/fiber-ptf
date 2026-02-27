@@ -1,16 +1,16 @@
 "use client";
 
 import gsap from "gsap";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useUnderwater } from "@/contexts/UnderwaterContext";
+import { PROJECTS, type ProjectItem } from "@/lib/projectImages";
 import { DisplacementTransitionEffect } from "./scene/DisplacementTransitionEffect";
 import { useFpsTracker } from "./scene/hooks/useFpsTracker";
 import { useSceneAudio } from "./scene/hooks/useSceneAudio";
 import { useSpaceTextMask } from "./scene/hooks/useSpaceTextMask";
 import { SceneCanvas } from "./scene/SceneCanvas";
 import type { SceneEffects, SceneTransitionState } from "./scene/sceneTypes";
-import type { ProjectItem } from "@/lib/projectImages";
 import type {
   FullscreenProjectPayload,
   ProjectPopoverPayload,
@@ -69,14 +69,25 @@ export default function Scene({
   // Project detail open/close state
   const [openProject, setOpenProject] = useState<ProjectItem | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [carouselCloseAnimRequestId, setCarouselCloseAnimRequestId] = useState(0);
+  const [carouselCloseAnimRequestId, setCarouselCloseAnimRequestId] =
+    useState(0);
+  const openProjectRef = useRef<ProjectItem | null>(null);
+  const [focusProjectRequest, setFocusProjectRequest] = useState<{
+    id: number;
+    project: ProjectItem;
+  } | null>(null);
 
+  // If we arrive already underwater (e.g. navigating back from contact/about),
+  // initialise fog and effects to their final values immediately so the scene
+  // is visible without needing a transition to run first.
   const transitionStateRef = useRef<SceneTransitionState>({
     isTransitioning: false,
-    bloomIntensity: 0.1,
-    underwaterFog: { near: 20, far: 15 },
-    showFluidEffect: false,
-    showUnderwaterEffects: false,
+    bloomIntensity: isUnderwater ? 0 : 0.1,
+    underwaterFog: isUnderwater
+      ? { near: 15, far: 140 }
+      : { near: 20, far: 15 },
+    showFluidEffect: isUnderwater,
+    showUnderwaterEffects: isUnderwater,
     scrollOffset: 0,
   });
 
@@ -162,6 +173,15 @@ export default function Scene({
     };
 
     if (cameraRef.current) {
+      // If arriving from space the camera is at y≈200 — snap it back to the
+      // surface position before running the underwater transition so the scene
+      // stays centred.
+      if (
+        Math.abs(cameraRef.current.position.y - INITIAL_CAMERA_POSITION.y) > 50
+      ) {
+        cameraRef.current.position.copy(INITIAL_CAMERA_POSITION);
+      }
+
       gsap.to(cameraRef.current.position, {
         y: cameraRef.current.position.y + (toUnderwater ? -15 : 15),
         duration,
@@ -273,6 +293,7 @@ export default function Scene({
     onUnderwaterToggle,
     ULTRA_FOG,
     DEFAULT_UNDERWATER_FOG,
+    INITIAL_CAMERA_POSITION,
     curveObject,
     effects,
   ]);
@@ -302,28 +323,97 @@ export default function Scene({
   }, [isInSpace, instantSpaceEntry]);
 
   const transitionState = transitionStateRef.current;
-  const activeProjectPreview = fullscreenProject ? null : hoverProjectPopover;
+
+  const nextProject = useMemo(() => {
+    if (!openProject || PROJECTS.length === 0) return null;
+
+    const openIndex = PROJECTS.findIndex(
+      (project) =>
+        project.title === openProject.title &&
+        project.imageUrl === openProject.imageUrl,
+    );
+
+    if (openIndex === -1) return PROJECTS[0];
+    return PROJECTS[(openIndex + 1) % PROJECTS.length];
+  }, [openProject]);
+
+  const detailViewPreview = useMemo<ProjectPopoverPayload | null>(() => {
+    if (!openProject || !nextProject) return null;
+
+    return {
+      title: nextProject.title,
+      imageUrl: nextProject.imageUrl,
+      detailImageUrl: nextProject.detailImageUrl,
+      detailVideoUrl: nextProject.detailVideoUrl,
+      description: nextProject.description,
+      detailBlocks: nextProject.detailBlocks,
+      x: 0,
+      y: 0,
+    };
+  }, [openProject, nextProject]);
+
+  const activeProjectPreview = openProject
+    ? detailViewPreview
+    : fullscreenProject
+      ? null
+      : hoverProjectPopover;
 
   // --- Project open ---
-  const handleProjectOpen = (project: ProjectItem) => {
-    if (openProject) return;
-    setOpenProject(project);
-    if (scrollContainerRef.current) scrollContainerRef.current.style.overflowY = "auto";
-  };
+  const handleProjectOpen = useCallback((project: ProjectItem) => {
+    setOpenProject((prev) => {
+      if (prev) return prev; // already open — ignore
+      if (scrollContainerRef.current)
+        scrollContainerRef.current.style.overflowY = "auto";
+      return project;
+    });
+  }, []);
 
   // Called when the carousel closes itself (click on plane or click outside).
   // No carousel reset needed — the carousel already cleared its own state.
-  const handleProjectClosedByCarousel = () => {
-    if (scrollContainerRef.current) scrollContainerRef.current.scrollTo({ top: 0 });
-    if (scrollContainerRef.current) scrollContainerRef.current.style.overflowY = "hidden";
+  const handleProjectClosedByCarousel = useCallback(() => {
+    if (scrollContainerRef.current)
+      scrollContainerRef.current.scrollTo({ top: 0 });
+    if (scrollContainerRef.current)
+      scrollContainerRef.current.style.overflowY = "hidden";
     setOpenProject(null);
-  };
+  }, []);
 
   // --- Project close from Back button: triggers the GL reverse animation.
   // The view is cleared only once the animation finishes (handleProjectClosedByCarousel).
-  const handleProjectClose = () => {
+  const handleProjectClose = useCallback(() => {
     setCarouselCloseAnimRequestId((v) => v + 1);
-  };
+  }, []);
+
+  const handleHoverPopoverChange = useCallback(
+    (payload: ProjectPopoverPayload | null) => {
+      if (openProjectRef.current) return;
+      setHoverProjectPopover(payload);
+    },
+    [],
+  );
+
+  const handleSwitchToNextProject = useCallback(() => {
+    if (!nextProject) return;
+
+    setOpenProject(nextProject);
+    setFocusProjectRequest({ id: Date.now(), project: nextProject });
+    setHoverProjectPopover(null);
+
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.clientHeight,
+      });
+    }
+  }, [nextProject]);
+
+  useEffect(() => {
+    openProjectRef.current = openProject;
+  }, [openProject]);
+
+  useEffect(() => {
+    if (!openProject) return;
+    setHoverProjectPopover(null);
+  }, [openProject]);
 
   return (
     <div
@@ -333,11 +423,17 @@ export default function Scene({
       {/* Scroll column: canvas strip on top, project detail below */}
       <div
         ref={scrollContainerRef}
+        data-scene-scroll-root="true"
         style={{ height: "100%", overflowY: "hidden" }}
       >
         {/* Canvas container — always 100 vh */}
         <div
-          style={{ position: "relative", width: "100%", height: "100vh", flexShrink: 0 }}
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100vh",
+            flexShrink: 0,
+          }}
         >
           <SceneCanvas
             isUnderwater={isUnderwater}
@@ -352,12 +448,13 @@ export default function Scene({
             onCurveFound={setCurvePosition}
             onCurveRefFound={setCurveObject}
             onCurveStarFound={setCurveStarPosition}
-            onHoverPopoverChange={setHoverProjectPopover}
+            onHoverPopoverChange={handleHoverPopoverChange}
             onFullscreenProjectChange={setFullscreenProject}
             onProjectOpen={handleProjectOpen}
             onProjectClose={handleProjectClosedByCarousel}
             closeRequestId={carouselCloseAnimRequestId}
             forceCloseRequestId={carouselCloseRequestId}
+            focusProjectRequest={focusProjectRequest}
             onCreated={({ camera, scene }) => {
               cameraRef.current = camera;
               sceneRef.current = scene;
@@ -365,7 +462,10 @@ export default function Scene({
           />
         </div>
         {openProject && (
-          <ProjectDetailView project={openProject} onClose={handleProjectClose} />
+          <ProjectDetailView
+            project={openProject}
+            onClose={handleProjectClose}
+          />
         )}
       </div>
 
@@ -381,6 +481,8 @@ export default function Scene({
         isUnderwater={isUnderwater}
         isInSpace={isInSpace}
         activeProjectPreview={activeProjectPreview}
+        isProjectDetailView={Boolean(openProject)}
+        onSwitchProject={handleSwitchToNextProject}
       />
 
       <FullscreenProjectOverlay

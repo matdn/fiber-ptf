@@ -68,6 +68,7 @@ export function UnderwaterProjectsCarousel({
   onProjectClose,
   closeRequestId,
   forceCloseRequestId,
+  focusProjectRequest,
 }: {
   isActive: boolean;
   centerPosition: THREE.Vector3 | null;
@@ -81,6 +82,7 @@ export function UnderwaterProjectsCarousel({
   onProjectClose?: () => void;
   closeRequestId?: number;
   forceCloseRequestId?: number;
+  focusProjectRequest?: { id: number; project: ProjectItem } | null;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const cellGroupRefs = useRef<Array<THREE.Group | null>>([]);
@@ -144,7 +146,7 @@ export function UnderwaterProjectsCarousel({
   const selectedScaleBoost = 0.06;
   const selectedInDamping = 4.8;
   const selectedOutDamping = 6.2;
-  const fullscreenDistance = 3.5  ;
+  const fullscreenDistance = 3.5;
   const minDistanceToCamera = 2.8;
 
   const orientationHelper = useMemo(() => new THREE.Object3D(), []);
@@ -160,6 +162,9 @@ export function UnderwaterProjectsCarousel({
       cameraWorldTarget: new THREE.Vector3(),
       targetLocal: new THREE.Vector3(),
       targetQuaternion: new THREE.Quaternion(),
+      cameraWorldQuaternion: new THREE.Quaternion(),
+      groupWorldQuaternion: new THREE.Quaternion(),
+      groupWorldQuaternionInverse: new THREE.Quaternion(),
       focusWorld: new THREE.Vector3(),
     }),
     [],
@@ -326,6 +331,55 @@ export function UnderwaterProjectsCarousel({
     onCameraLookAtLockChange,
     onCameraMotionLockChange,
     onFullscreenProjectChange,
+  ]);
+
+  useEffect(() => {
+    if (!focusProjectRequest || !isActive) return;
+
+    const matchingCellIndices: number[] = [];
+    for (const cell of cells) {
+      if (
+        cell.project.title === focusProjectRequest.project.title &&
+        cell.project.imageUrl === focusProjectRequest.project.imageUrl
+      ) {
+        matchingCellIndices.push(cell.cellIndex);
+      }
+    }
+
+    if (matchingCellIndices.length === 0) return;
+
+    const currentFocusCell = selectedCellRef.current ?? pendingCellRef.current;
+    const targetCell =
+      currentFocusCell === null
+        ? matchingCellIndices[0]
+        : matchingCellIndices.reduce((best, candidate) => {
+            const bestScore = Math.abs(best - currentFocusCell);
+            const candidateScore = Math.abs(candidate - currentFocusCell);
+            return candidateScore < bestScore ? candidate : best;
+          }, matchingCellIndices[0]);
+
+    hoveredCellRef.current = null;
+    pendingCellRef.current = null;
+    selectedCellRef.current = targetCell;
+    selectedProgressRef.current = selectedProgressRef.current.map((_, index) =>
+      index === targetCell ? 1 : 0,
+    );
+    selectImpulseStartRef.current[targetCell] = Number.NEGATIVE_INFINITY;
+    projectOpenFiredRef.current.clear();
+    projectOpenFiredRef.current.add(targetCell);
+    projectClosingRef.current.clear();
+    onHoverPopoverChange?.(null);
+    onCameraMotionLockChange?.(true);
+    onCameraLookAtLockChange?.(null);
+    onFullscreenProjectChange?.(null);
+  }, [
+    cells,
+    focusProjectRequest,
+    isActive,
+    onCameraLookAtLockChange,
+    onCameraMotionLockChange,
+    onFullscreenProjectChange,
+    onHoverPopoverChange,
   ]);
 
   // Soft close triggered externally (e.g. Back button) — starts the reverse animation.
@@ -595,10 +649,12 @@ export function UnderwaterProjectsCarousel({
           tmp.targetLocal.copy(tmp.cameraLocal).add(tmp.dirWorld);
         }
 
-        orientationHelper.position.copy(cellGroup.position);
-        orientationHelper.up.set(0, 1, 0);
-        orientationHelper.lookAt(tmp.cameraLocal);
-        tmp.targetQuaternion.copy(orientationHelper.quaternion);
+        camera.getWorldQuaternion(tmp.cameraWorldQuaternion);
+        groupRef.current.getWorldQuaternion(tmp.groupWorldQuaternion);
+        tmp.groupWorldQuaternionInverse.copy(tmp.groupWorldQuaternion).invert();
+        tmp.targetQuaternion
+          .copy(tmp.groupWorldQuaternionInverse)
+          .multiply(tmp.cameraWorldQuaternion);
         if (cellGroup.quaternion.dot(tmp.targetQuaternion) < 0) {
           tmp.targetQuaternion.x *= -1;
           tmp.targetQuaternion.y *= -1;
@@ -672,7 +728,10 @@ export function UnderwaterProjectsCarousel({
       let maxCellIndex = -1;
       for (let i = 0; i < selectedProgressRef.current.length; i++) {
         const p = selectedProgressRef.current[i];
-        if (p > maxProgress) { maxProgress = p; maxCellIndex = i; }
+        if (p > maxProgress) {
+          maxProgress = p;
+          maxCellIndex = i;
+        }
       }
 
       const backdropMat = backdrop.material as THREE.MeshBasicMaterial;

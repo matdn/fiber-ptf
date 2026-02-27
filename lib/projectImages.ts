@@ -4,6 +4,13 @@ export type ProjectDetailBlock =
   | { type: 'text'; content: string }
   | { type: 'image'; src: string; height?: number }
   | { type: 'video'; src: string; height?: number }
+  | {
+      type: 'feature-grid'
+      heading: string
+      videoSrc: string
+      imageSrc: string
+      paragraphs: string[]
+    }
 
 type RawProject = {
   title: string
@@ -11,10 +18,13 @@ type RawProject = {
   detailImageUrl?: string | null
   detailVideoUrl?: string | null
   description: string
+  tags?: string[]
+  year?: string
   detailBlocks?: Array<
     | { type: 'text'; content: string }
     | { type: 'image'; src: string; height?: number }
     | { type: 'video'; src: string; height?: number }
+    | { type: 'feature-grid'; heading: string; videoSrc: string; imageSrc: string; paragraphs: string[] }
   >
 }
 
@@ -25,6 +35,8 @@ export type ProjectItem = {
   detailVideoUrl?: string
   description: string
   detailBlocks: ProjectDetailBlock[]
+  tags?: string[]
+  year?: string
 }
 
 const projects = rawProjects as RawProject[]
@@ -49,6 +61,8 @@ export const PROJECTS: ProjectItem[] = projects.map((project) => {
     detailImageUrl: project.detailImageUrl || undefined,
     detailVideoUrl: project.detailVideoUrl || undefined,
     description: project.description,
+    tags: project.tags,
+    year: project.year,
     detailBlocks: normalizedBlocks,
   }
 })

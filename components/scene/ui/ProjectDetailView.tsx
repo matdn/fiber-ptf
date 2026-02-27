@@ -1,227 +1,287 @@
 "use client";
 
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { memo } from "react";
-import type { ProjectItem } from "@/lib/projectImages";
+import { memo, useEffect, useRef } from "react";
+import { PROJECTS, type ProjectItem } from "@/lib/projectImages";
+import { ProjectDetailFooter } from "./ProjectDetailFooter";
 
 type Props = {
   project: ProjectItem;
   onClose: () => void;
 };
 
-// Static lorem blocks that simulate editorial depth
-const LOREM_OVERVIEW =
-  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque vehicula augue vel diam ornare, nec efficitur tortor commodo. Pellentesque habitant morbi tristique senectus et netus.";
-
-const LOREM_SECTIONS = [
-  {
-    index: "01",
-    label: "CONCEPT",
-    heading: "Form follows signal",
-    body: "Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. Duis posuere augue vel urna luctus, quis euismod mi pretium. Curabitur viverra diam at nunc fermentum elementum.",
-  },
-  {
-    index: "02",
-    label: "PROCESS",
-    heading: "Iterative by nature",
-    body: "Fusce tincidunt nisl at libero fermentum, id ultrices risus consequat. Nullam sed libero ut nunc volutpat gravida nec non enim. Aenean eu metus quis libero ultrices auctor in sit amet lorem.",
-  },
-  {
-    index: "03",
-    label: "RESULT",
-    heading: "Precision at scale",
-    body: "Praesent ultrices risus id tortor egestas, ac facilisis felis interdum. Sed condimentum, metus ac venenatis condimentum, neque lacus viverra libero.",
-  },
-];
-
 export const ProjectDetailView = memo(function ProjectDetailView({
   project,
   onClose,
 }: Props) {
-  // Separate media blocks from text-only blocks
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const projectIndex = PROJECTS.findIndex((p) => p.title === project.title);
+  const indexLabel = String(projectIndex + 1).padStart(2, "0");
+  const totalLabel = String(PROJECTS.length).padStart(2, "0");
+
   const mediaBlocks = project.detailBlocks.filter(
     (b) => b.type === "image" || b.type === "video",
   );
-  const firstMedia = mediaBlocks[0] ?? null;
+  const heroMedia   = mediaBlocks[0] ?? null;
+  const secondMedia = mediaBlocks[1] ?? null;
+  const galleryMedia = mediaBlocks.slice(2);
+
+  useEffect(() => {
+    if (!rootRef.current) return;
+    const currentProjectTitle = project.title;
+    const scrollRoot = rootRef.current.closest(
+      "[data-scene-scroll-root='true']",
+    ) as HTMLElement | null;
+
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        "[data-pdv-index]",
+        { autoAlpha: 0, y: 24 },
+        { autoAlpha: 1, y: 0, duration: 0.6, ease: "power3.out" },
+      );
+      gsap.fromTo(
+        "[data-pdv-hero-title]",
+        { autoAlpha: 0, y: 36 },
+        { autoAlpha: 1, y: 0, duration: 0.8, delay: 0.06, ease: "power3.out" },
+      );
+      gsap.fromTo(
+        "[data-pdv-hero-copy]",
+        { autoAlpha: 0, y: 22 },
+        { autoAlpha: 1, y: 0, duration: 0.75, delay: 0.14, ease: "power3.out" },
+      );
+      gsap.fromTo(
+        "[data-pdv-tags]",
+        { autoAlpha: 0, y: 16 },
+        { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.22, ease: "power3.out" },
+      );
+      gsap.fromTo(
+        "[data-pdv-hero-media]",
+        { autoAlpha: 0, scale: 1.04 },
+        { autoAlpha: 1, scale: 1, duration: 1.1, delay: 0.04, ease: "power2.out" },
+      );
+
+      const revealTargets = gsap.utils.toArray<HTMLElement>("[data-pdv-animate]");
+      revealTargets.forEach((target, index) => {
+        gsap.fromTo(
+          target,
+          { autoAlpha: 0, y: 48 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.9,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: target,
+              scroller: scrollRoot || undefined,
+              id: `pdv-${currentProjectTitle}-${index}`,
+              start: "top 86%",
+              once: true,
+            },
+          },
+        );
+      });
+    }, rootRef);
+
+    return () => { ctx.revert(); };
+  }, [project.title]);
 
   return (
-    <div className="w-full bg-[#F9F9F9] min-h-screen text-black" style={{ fontFamily: "inherit" }}>
+    <div
+      ref={rootRef}
+      className="w-full"
+      style={{ fontFamily: "inherit", position: "relative" }}
+    >
+      {/* Content layer — slides over sticky footer */}
+      <div style={{ position: "relative", zIndex: 1, background: "#fefefe" }}>
 
-     
-      {/* ── Hero: large title + first media side-by-side ────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[90vh]">
+        
 
-        {/* Left: editorial title block */}
-        <div className="flex flex-col justify-between px-8 pt-16 pb-16">
-          <div>
-            {/* section tag */}
-            <p
-              className="uppercase text-black/30 mb-8"
-              style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-            >
-              <span className="mr-3 text-black/20">01</span>PROJECT
+        {/* ── Hero: full-width framed ──────────────────────────────── */}
+        <div data-pdv-hero-media style={{ padding: "2rem 2.5rem 0" }}>
+          <div
+            className="relative overflow-hidden w-full"
+            style={{ height: "62vh", background: "rgba(0,0,0,0.04)", borderRadius: "4px" }}
+          >
+            {heroMedia?.type === "video" ? (
+              <video src={heroMedia.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+            ) : heroMedia?.type === "image" ? (
+              <Image src={heroMedia.src} alt="" fill sizes="90vw" style={{ objectFit: "cover" }} />
+            ) : (
+              <Image src={project.imageUrl} alt="" fill sizes="90vw" style={{ objectFit: "cover" }} />
+            )}
+          </div>
+        </div>
+
+        <div style={{ height: "clamp(5rem, 10vw, 9rem)" }} />
+
+        {/* ── Info split: text left / second media right ──────────── */}
+        <div
+          data-pdv-hero-title
+          className="grid grid-cols-1 lg:grid-cols-2"
+          style={{ padding: "0 2.5rem", gap: "3rem", alignItems: "flex-start" }}
+        >
+          <div className="flex flex-col" style={{ gap: "2.4rem" }}>
+            <p style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(0,0,0,0.28)" }}>
+              {project.description}
             </p>
 
-            {/* Main headline — fills width deliberately */}
             <h1
-              className="font-light leading-[1.0] text-black mb-8"
-              style={{ fontSize: "clamp(3.2rem, 7vw, 6.5rem)", letterSpacing: "-0.02em" }}
+              style={{
+                fontSize: "clamp(3.5rem, 8vw, 7.5rem)",
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                lineHeight: 0.92,
+                color: "#000000",
+                textTransform: "uppercase",
+              }}
             >
               {project.title}
             </h1>
 
-            {/* Sub-tags row */}
+            {project.detailBlocks
+              .filter((b) => b.type === "text")
+              .map((b, i) =>
+                b.type === "text" ? (
+                  <p
+                    // biome-ignore lint/suspicious/noArrayIndexKey: stable index
+                    key={i}
+                    data-pdv-hero-copy
+                    style={{ fontSize: "0.8rem", lineHeight: 1.82, color: "rgba(0,0,0,0.38)", maxWidth: "50ch" }}
+                  >
+                    {b.content}
+                  </p>
+                ) : null,
+              )}
+
+            {project.tags && project.tags.length > 0 && (
+              <div data-pdv-tags className="flex flex-wrap gap-2" style={{ paddingTop: "0.5rem" }}>
+                {project.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    style={{
+                      padding: "0.3rem 0.8rem",
+                      borderRadius: "999px",
+                      border: "1px solid rgba(0,0,0,0.12)",
+                      fontSize: "0.62rem",
+                      letterSpacing: "0.08em",
+                      color: "rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {secondMedia && (
             <div
-              className="flex flex-wrap gap-x-6 gap-y-1 text-black/30 mb-12"
-              style={{ fontSize: "0.7rem", letterSpacing: "0.18em" }}
+              className="relative overflow-hidden"
+              style={{ height: "clamp(360px, 52vh, 620px)", borderRadius: "4px", background: "rgba(0,0,0,0.04)" }}
             >
-              {["Design", "Motion", "3D", "Interactive"].map((tag, i) => (
-                <span key={tag}>
-                  <sup className="mr-0.5 text-black/20">{String(i + 1).padStart(2, "0")}</sup>
-                  {tag.toUpperCase()}
-                </span>
+              {secondMedia.type === "video" ? (
+                <video src={secondMedia.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <Image src={secondMedia.src} alt="" fill sizes="45vw" style={{ objectFit: "cover" }} />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ height: "clamp(4rem, 8vw, 7rem)" }} />
+
+        {/* ── Gallery grid ─────────────────────────────────────────── */}
+        {galleryMedia.length > 0 && (
+          <div data-pdv-animate style={{ padding: "0 2.5rem 2.5rem" }}>
+            <div className="grid" style={{ gridTemplateColumns: "repeat(2, 1fr)", gap: "0.6rem" }}>
+              {galleryMedia.map((block, i) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: stable index
+                  key={i}
+                  className="relative overflow-hidden"
+                  style={{ height: "clamp(200px, 30vw, 420px)", borderRadius: "4px", background: "rgba(0,0,0,0.04)" }}
+                >
+                  {block.type === "video" ? (
+                    <video src={block.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <Image src={block.src} alt="" fill sizes="45vw" style={{ objectFit: "cover" }} />
+                  )}
+                </div>
               ))}
             </div>
           </div>
+        )}
 
-          {/* Overview text */}
-          <div>
-            <p
-              className="text-black/50 leading-relaxed max-w-sm mb-6"
-              style={{ fontSize: "0.82rem" }}
-            >
-              {project.description || LOREM_OVERVIEW}
-            </p>
-            <p
-              className="text-black/30 leading-relaxed max-w-sm"
-              style={{ fontSize: "0.82rem" }}
-            >
-              {LOREM_OVERVIEW}
-            </p>
-          </div>
-        </div>
+        {/* ── Feature-grid blocks ──────────────────────────────────── */}
+        {project.detailBlocks
+          .filter((b) => b.type === "feature-grid")
+          .map((block, i) => {
+            if (block.type !== "feature-grid") return null;
+            return (
+              <section
+                // biome-ignore lint/suspicious/noArrayIndexKey: stable index
+                key={i}
+                data-pdv-animate
+                style={{ padding: "3rem 2.5rem 2.5rem", borderTop: "1px solid rgba(0,0,0,0.07)" }}
+              >
+                <h2
+                  style={{
+                    fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
+                    fontWeight: 700,
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1.1,
+                    color: "#000",
+                    maxWidth: "22ch",
+                    marginBottom: "2rem",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {block.heading}
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0.6rem", marginBottom: "0.6rem" }}>
+                  <div className="relative overflow-hidden" style={{ height: "clamp(220px, 35vw, 480px)", borderRadius: "4px" }}>
+                    <video src={block.videoSrc} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                  <div className="relative overflow-hidden" style={{ height: "clamp(220px, 35vw, 480px)", borderRadius: "4px" }}>
+                    <Image src={block.imageSrc} alt="" fill sizes="45vw" style={{ objectFit: "cover" }} />
+                  </div>
+                </div>
+                {/* <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: "0.6rem" }}>
+                  {block.paragraphs.map((p, pi) => (
+                    <p
+                      // biome-ignore lint/suspicious/noArrayIndexKey: stable index
+                      key={pi}
+                      style={{
+                        fontSize: "0.78rem",
+                        lineHeight: 1.8,
+                        color: "rgba(0,0,0,0.35)",
+                        padding: "1.4rem",
+                        border: "1px solid rgba(0,0,0,0.07)",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      {p}
+                    </p>
+                  ))}
+                </div> */}
+              </section>
+            );
+          })}
 
-        {/* Right: first media — full-bleed */}
-        <div className="relative bg-black/5 overflow-hidden">
-          {firstMedia?.type === "video" && (
-            <video
-              src={firstMedia.src}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-          {firstMedia?.type === "image" && (
-            <Image
-              src={firstMedia.src}
-              alt=""
-              fill
-              sizes="50vw"
-              style={{ objectFit: "cover" }}
-            />
-          )}
-          {!firstMedia && (
-            <div className="absolute inset-0 bg-black/[0.04]" />
-          )}
-        </div>
+        <div style={{ height: "6rem" }} />
+
       </div>
 
-      {/* ── Numbered sections ───────────────────────────────────── */}
-      <div className="border-t border-black/10">
-        {LOREM_SECTIONS.map((sec) => (
-          <div
-            key={sec.index}
-            className="grid grid-cols-[1fr_2fr] lg:grid-cols-[200px_1fr_1fr] border-b border-black/10 px-8 py-16 gap-8"
-          >
-            {/* Label */}
-            <div className="flex flex-col gap-2">
-              <span
-                className="text-black/20"
-                style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-              >
-                {sec.index}
-              </span>
-              <span
-                className="uppercase text-black/50"
-                style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-              >
-                {sec.label}
-              </span>
-            </div>
-
-            {/* Heading */}
-            <h2
-              className="font-light leading-tight text-black self-start"
-              style={{ fontSize: "clamp(1.6rem, 3vw, 2.6rem)", letterSpacing: "-0.01em" }}
-            >
-              {sec.heading}
-            </h2>
-
-            {/* Body copy */}
-            <p
-              className="text-black/50 leading-relaxed self-start hidden lg:block"
-              style={{ fontSize: "0.82rem" }}
-            >
-              {sec.body}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Remaining media blocks ───────────────────────────────── */}
-      {mediaBlocks.length > 1 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2">
-          {mediaBlocks.slice(1).map((block, i) => (
-            <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: stable index
-              key={i}
-              className="relative overflow-hidden"
-              style={{ height: block.height ?? 440 }}
-            >
-              {block.type === "image" && (
-                <Image
-                  src={block.src}
-                  alt=""
-                  fill
-                  sizes="50vw"
-                  style={{ objectFit: "cover" }}
-                />
-              )}
-              {block.type === "video" && (
-                <video
-                  src={block.src}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Footer ─────────────────────────────────────────────── */}
+      {/* Footer — sticky, revealed as content scrolls past */}
       <div
-        className="flex items-end justify-between px-8 pt-20 pb-12 border-t border-black/10"
+        id="project-detail-footer-sentinel"
+        style={{ position: "sticky", bottom: 0, zIndex: 0 }}
       >
-        <p
-          className="uppercase text-black/20"
-          style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-        >
-          {project.title}
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="uppercase text-black/40 hover:text-black transition-colors"
-          style={{ fontSize: "0.7rem", letterSpacing: "0.2em" }}
-        >
-          ← Back
-        </button>
+        <ProjectDetailFooter onBack={onClose} projectTitle={project.title} />
       </div>
     </div>
   );

@@ -7,16 +7,21 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
   isUnderwater,
   isInSpace,
   activeProjectPreview,
+  isProjectDetailView,
+  onSwitchProject,
 }: {
   isUnderwater: boolean;
   isInSpace: boolean;
   activeProjectPreview: ProjectPopoverPayload | null;
+  isProjectDetailView: boolean;
+  onSwitchProject?: () => void;
 }) {
   if (!isUnderwater || isInSpace) return null;
+  const canSwitchProject = isProjectDetailView && Boolean(onSwitchProject);
 
   return (
     <div
-      className="fixed pointer-events-none z-30"
+      className={`fixed z-30 ${canSwitchProject ? "pointer-events-auto" : "pointer-events-none"}`}
       style={{
         left: "50%",
         bottom: "34px",
@@ -28,26 +33,33 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
       }}
     >
       {activeProjectPreview && (
-        <div
+        <button
+          type="button"
+          onClick={onSwitchProject}
+          disabled={!canSwitchProject}
           style={{
             display: "flex",
             alignItems: "center",
             gap: "0.8rem",
-            padding: "0.55rem 0.9rem",
+            padding: "0.4rem",
+            textAlign: "left",
+            width: "100%",
             borderRadius: "0.5rem",
-            border: "1px solid rgba(144, 148, 255, 0.65)",
-            background: "rgba(244, 246, 255, 0.96)",
+            border: "1px solid rgba(200,200,200, 0.65)",
+            background: "rgba(255, 255, 255, 0.5)",
             boxShadow: "0 8px 20px rgba(16, 22, 48, 0.14)",
             minWidth: "230px",
+            backdropFilter: "blur(4px)",
+            cursor: canSwitchProject ? "pointer" : "default",
           }}
         >
           <img
             src={activeProjectPreview.imageUrl}
             alt={activeProjectPreview.title}
-            width={38}
+            width={48}
             height={38}
             style={{
-              width: "38px",
+              width: "48px",
               height: "38px",
               objectFit: "cover",
               borderRadius: "0.35rem",
@@ -64,9 +76,25 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
               textTransform: "uppercase",
             }}
           >
-            {activeProjectPreview.title}
+            {!canSwitchProject && activeProjectPreview.title }
           </span>
-        </div>
+          {canSwitchProject && (
+            <span
+              style={{
+                fontFamily: "Mabry, sans-serif",
+                color: "#ffffff",
+                mixBlendMode: "difference",
+                fontSize: "12px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                
+              }}
+            >
+              Projet suivant
+            </span>
+          )}
+        </button>
       )}
     </div>
   );
