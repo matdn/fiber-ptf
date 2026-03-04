@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { UnderwaterProvider } from "@/contexts/UnderwaterContext";
 import FloatingSoundToggle from "@/components/FloatingSoundToggle";
+import PreventHorizontalNavigation from '@/components/PreventHorizontalNavigation';
 
 export const metadata: Metadata = {
   title: "Next.js Three.js Portfolio",
@@ -17,6 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <UnderwaterProvider>
+          <PreventHorizontalNavigation />
           <FloatingSoundToggle />
           {children}
         </UnderwaterProvider>

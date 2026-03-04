@@ -202,6 +202,13 @@ export default function Header({
                 </Link>
               )}
 
+              <Link
+                href="/laboratory"
+                className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
+              >
+                labs
+              </Link>
+
               {onSpaceToggle ? (
                 <button
                   type="button"
@@ -284,6 +291,16 @@ export default function Header({
                     works
                   </Link>
                 )}
+              </li>
+
+              <li>
+                <Link
+                  href="/laboratory"
+                  className="text-white/80 hover:text-white transition-colors block text-lg"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  labs
+                </Link>
               </li>
               <li>
                 {onSpaceToggle ? (

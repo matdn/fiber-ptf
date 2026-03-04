@@ -45,6 +45,14 @@ type TubeCell = {
   texture: THREE.Texture;
 };
 
+const FEATURED_PROJECT_TITLE = "Altitude 101";
+
+function isFeaturedProjectTitle(title: string) {
+  const normalized = title.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const featured = FEATURED_PROJECT_TITLE.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return normalized === featured;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
@@ -241,13 +249,15 @@ export function UnderwaterProjectsCarousel({
     event: ThreeEvent<MouseEvent | PointerEvent>,
     offsetX: number,
   ): ProjectPopoverPayload => {
+    const isFeatured = isFeaturedProjectTitle(project.title);
+
     return {
       title: project.title,
       imageUrl: project.imageUrl,
       detailImageUrl: project.detailImageUrl,
       detailVideoUrl: project.detailVideoUrl,
-      description: project.description,
-      detailBlocks: project.detailBlocks,
+      description: isFeatured ? project.description : "Coming soon",
+      detailBlocks: isFeatured ? project.detailBlocks : undefined,
       x: event.nativeEvent.clientX + offsetX,
       y: event.nativeEvent.clientY,
     };
@@ -255,9 +265,12 @@ export function UnderwaterProjectsCarousel({
 
   const clothOnBeforeCompile = (shader: ShaderLike, cellIndex: number) => {
     const cell = cells[cellIndex];
+    const isFeatured = cell ? isFeaturedProjectTitle(cell.project.title) : false;
     shader.uniforms.uPull = { value: 0 };
     shader.uniforms.uBulge = { value: 0 };
-    shader.uniforms.uBW = { value: bwEnabledRef.current ? 1 : 0 };
+    // Only the featured project stays in color; everything else is forced B&W.
+    shader.uniforms.uBW = { value: isFeatured ? 0 : 1 };
+    shader.uniforms.uBlur = { value: 0 };
     shader.uniforms.uFlat = { value: 0 };
     shader.uniforms.uTime = { value: 0 };
     shader.uniforms.uScroll = { value: 0 };
@@ -332,7 +345,47 @@ export function UnderwaterProjectsCarousel({
 
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <common>",
-      `#include <common>\nuniform float uBW;`,
+      `#include <common>\nuniform float uBW;\nuniform float uBlur;`,
+    );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <map_fragment>",
+      `#ifdef USE_MAP
+
+  float blur = clamp( uBlur, 0.0, 1.0 );
+  vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+
+  if ( blur > 0.001 ) {
+    // Cheap multi-tap blur in UV space (version-safe: no derivatives required).
+    vec2 o = vec2( 0.008, 0.008 ) * ( 0.45 + blur * 2.8 );
+
+    vec4 sum = vec4( 0.0 );
+    sum += texture2D( map, vMapUv ) * 0.22;
+    sum += texture2D( map, vMapUv + vec2(  o.x, 0.0 ) ) * 0.14;
+    sum += texture2D( map, vMapUv + vec2( -o.x, 0.0 ) ) * 0.14;
+    sum += texture2D( map, vMapUv + vec2( 0.0,  o.y ) ) * 0.14;
+    sum += texture2D( map, vMapUv + vec2( 0.0, -o.y ) ) * 0.14;
+    sum += texture2D( map, vMapUv + vec2(  o.x,  o.y ) ) * 0.055;
+    sum += texture2D( map, vMapUv + vec2( -o.x,  o.y ) ) * 0.055;
+    sum += texture2D( map, vMapUv + vec2(  o.x, -o.y ) ) * 0.055;
+    sum += texture2D( map, vMapUv + vec2( -o.x, -o.y ) ) * 0.055;
+    sampledDiffuseColor = mix( sampledDiffuseColor, sum, blur );
+  }
+
+  #ifdef DECODE_VIDEO_TEXTURE
+
+    // use inline sRGB decode until browsers properly support SRGB8_ALPHA8 with video textures (#26516)
+    sampledDiffuseColor = sRGBTransferEOTF( sampledDiffuseColor );
+
+  #endif
+
+  // Dim non-featured tiles in addition to blurring.
+  float dim = mix( 1.0, 1., blur );
+  sampledDiffuseColor.rgb *= dim;
+
+  diffuseColor *= sampledDiffuseColor;
+
+#endif`,
     );
 
     // Toggleable black & white (grayscale) in the fragment output.
@@ -800,14 +853,15 @@ export function UnderwaterProjectsCarousel({
       }
 
       const material = mesh.material as THREE.MeshBasicMaterial;
+      const baseOpacity = isFeaturedProjectTitle(cell.project.title) ? 1 : 0.5;
       if (selectedCellRef.current === null) {
-        material.opacity = 1;
+        material.opacity = baseOpacity;
       } else if (selectedCellRef.current === cell.cellIndex) {
         material.opacity = 1;
       } else {
         const activeSelectionProgress =
           selectedProgressRef.current[selectedCellRef.current] || 0;
-        material.opacity = 1 - activeSelectionProgress * 0.88;
+        material.opacity = (1 - activeSelectionProgress * 0.88) * baseOpacity;
       }
 
       mesh.renderOrder = selectedProgress > 0.02 ? 50 : 0;
@@ -855,7 +909,14 @@ export function UnderwaterProjectsCarousel({
         shader.uniforms.uBulge.value = bulgeStrength * motion;
       }
       if (shader?.uniforms?.uBW) {
-        shader.uniforms.uBW.value = bwEnabledRef.current ? 1 : 0;
+        shader.uniforms.uBW.value = isFeaturedProjectTitle(cell.project.title)
+          ? 0
+          : 1;
+      }
+      if (shader?.uniforms?.uBlur) {
+        shader.uniforms.uBlur.value = isFeaturedProjectTitle(cell.project.title)
+          ? 0
+          : 0;
       }
       if (shader?.uniforms?.uFlat) {
         shader.uniforms.uFlat.value = flat;
@@ -1023,6 +1084,10 @@ export function UnderwaterProjectsCarousel({
             }}
             onClick={(event) => {
               event.stopPropagation();
+
+              // Only Altitude 101 is interactable; other projects are Coming Soon.
+              if (!isFeaturedProjectTitle(cell.project.title)) return;
+
               const isClosing =
                 selectedCellRef.current === cell.cellIndex ||
                 pendingCellRef.current === cell.cellIndex;

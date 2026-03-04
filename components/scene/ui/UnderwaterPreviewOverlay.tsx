@@ -3,6 +3,14 @@
 import { memo } from "react";
 import type { ProjectPopoverPayload } from "../UnderwaterProjectsCarousel";
 
+const FEATURED_PROJECT_TITLE = "Altitude 101";
+
+function isFeaturedProjectTitle(title: string) {
+  const normalized = title.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const featured = FEATURED_PROJECT_TITLE.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return normalized === featured;
+}
+
 export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
   isUnderwater,
   isInSpace,
@@ -17,7 +25,12 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
   onSwitchProject?: () => void;
 }) {
   if (!isUnderwater || isInSpace) return null;
-  const canSwitchProject = isProjectDetailView && Boolean(onSwitchProject);
+  const canSwitchProject =
+    isProjectDetailView &&
+    Boolean(onSwitchProject) &&
+    Boolean(
+      activeProjectPreview && isFeaturedProjectTitle(activeProjectPreview.title),
+    );
 
   return (
     <div
@@ -77,7 +90,10 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
               textTransform: "uppercase",
             }}
           >
-            {!canSwitchProject && activeProjectPreview.title }
+            {!canSwitchProject &&
+              (isFeaturedProjectTitle(activeProjectPreview.title)
+                ? activeProjectPreview.title
+                : "COMING SOON")}
           </span>
           {canSwitchProject && (
             <span

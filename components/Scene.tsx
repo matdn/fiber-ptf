@@ -24,6 +24,14 @@ import { SpaceTextOverlay } from "./scene/ui/SpaceTextOverlay";
 import { TransitionFlashOverlay } from "./scene/ui/TransitionFlashOverlay";
 import { UnderwaterPreviewOverlay } from "./scene/ui/UnderwaterPreviewOverlay";
 
+const FEATURED_PROJECT_TITLE = "Altitude 101";
+
+function isFeaturedProjectTitle(title: string) {
+  const normalized = title.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const featured = FEATURED_PROJECT_TITLE.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return normalized === featured;
+}
+
 class EffectsManager {
   private static instance: EffectsManager;
   readonly underwaterRaysEffect = new UnderwaterRaysEffect();
@@ -385,6 +393,7 @@ export default function Scene({
 
   const handleSwitchToNextProject = useCallback(() => {
     if (!nextProject) return;
+    if (!isFeaturedProjectTitle(nextProject.title)) return;
 
     setOpenProject(nextProject);
     setFocusProjectRequest({ id: Date.now(), project: nextProject });

@@ -10,6 +10,8 @@ import Header from '@/components/Header'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { DraggableSphere } from '@/components/DraggableSphere'
 
+const LABS_EXTERNAL_URL = 'https://tympanus.net/Tutorials/3DImageTubeR3F/'
+
 function Postprocessing({ distortionIntensity, isUnderwater }: { distortionIntensity: number; isUnderwater: boolean }) {
   const { gl, scene, camera } = useThree()
   
@@ -32,7 +34,8 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
 
   // Update distortion intensity
   useEffect(() => {
-    distortionShader.setDistortion(distortionIntensity)
+    distortionShader.setCenterBias(1)
+    distortionShader.setDistortion(distortionIntensity * 1.6)
   }, [distortionIntensity, distortionShader])
   
   // Render with effect composer
@@ -40,12 +43,7 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
     effectComposer.render()
   }, 1)
  
-  return isUnderwater ? (
-    <EffectComposer multisampling={0}>
-      <ChromaticAberration offset={[0.0015, 0.0015]} />
-      <SMAA />
-    </EffectComposer>
-  ) : null
+  return null
 }
 
 function Grid({ onDistortionChange, onDragVelocity }: { 
@@ -57,9 +55,17 @@ function Grid({ onDistortionChange, onDragVelocity }: {
   const lastPointerPos = useRef({ x: 0, y: 0 })
   const lastPointerTime = useRef(0)
   const isDragging = useRef(false)
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
   
   const grid = useMemo(() => {
-    return new ProjectsGrid(camera, onDistortionChange)
+    return new ProjectsGrid(camera, onDistortionChange, {
+      distortionMax: 0.14,
+      snapBackOnIdle: true,
+      cursorOffsetStrength: 0,
+      viewPaddingX: 42,
+      viewPaddingY: 28,
+      pruneBuffer: 8,
+    })
   }, [camera, onDistortionChange])
 
   // Animer les cartes au chargement de la page
@@ -106,6 +112,7 @@ function Grid({ onDistortionChange, onDragVelocity }: {
       
       grid.onPointerDown(x, y)
       isDragging.current = true
+      pointerDownPos.current = { x, y }
       lastPointerPos.current = { x, y }
       lastPointerTime.current = performance.now()
       if (canvas.setPointerCapture) {
@@ -114,24 +121,53 @@ function Grid({ onDistortionChange, onDragVelocity }: {
     }
 
     const handlePointerUp = (e?: PointerEvent) => {
+      if (e) {
+        const rect = canvas.getBoundingClientRect()
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+        const down = pointerDownPos.current
+        const dx = down ? x - down.x : 0
+        const dy = down ? y - down.y : 0
+        const movedSq = dx * dx + dy * dy
+
+        // Treat as a click if pointer barely moved.
+        if (movedSq < 36) {
+          const project = grid.pickProjectAt(x, y, rect.width, rect.height)
+          if (project) {
+            window.location.assign(LABS_EXTERNAL_URL)
+          }
+        }
+      }
+
       grid.onPointerUp()
       isDragging.current = false
+      pointerDownPos.current = null
       onDragVelocity({ x: 0, y: 0 })
       if (e && canvas.releasePointerCapture) {
         canvas.releasePointerCapture(e.pointerId)
       }
     }
 
+    const handleWheel = (e: WheelEvent) => {
+      // Prevent horizontal swipe from triggering browser back/forward.
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault()
+      }
+      grid.onWheel(e.deltaX, e.deltaY)
+    }
+
     canvas.addEventListener('pointermove', handlePointerMove)
     canvas.addEventListener('pointerdown', handlePointerDown)
     canvas.addEventListener('pointerup', handlePointerUp)
     canvas.addEventListener('pointerleave', handlePointerUp)
+    canvas.addEventListener('wheel', handleWheel, { passive: false })
 
     return () => {
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)
       canvas.removeEventListener('pointerleave', handlePointerUp)
+      canvas.removeEventListener('wheel', handleWheel)
       grid.dispose()
     }
   }, [grid, gl, onDragVelocity])
@@ -157,17 +193,17 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
 }) {
   return (
     <>
-      <color attach="background" args={isUnderwater ? ['#ffffff'] : ['#000000']} />
+      <color attach="background" args={['#000000']} />
       <ambientLight intensity={0.3} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
       <Grid onDistortionChange={onDistortionChange} onDragVelocity={onDragVelocity} />
       <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
-      {/* <Postprocessing distortionIntensity={isUnderwater ? distortionIntensity : distortionIntensity} isUnderwater={isUnderwater} /> */}
+      <Postprocessing distortionIntensity={distortionIntensity} isUnderwater={isUnderwater} />
     </>
   )
 }
 
-export default function WorksPage() {
+export default function LaboratoryPage() {
   const [distortionIntensity, setDistortionIntensity] = useState(0)
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const { isUnderwater } = useUnderwater()
@@ -188,24 +224,6 @@ export default function WorksPage() {
             onDragVelocity={setDragVelocity}
           />
         </Canvas>
-        
-        {/* Overlay avec gradient sur les bords */}
-        <div className="absolute inset-0 pointer-events-none z-10">
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: isUnderwater 
-                ? 'radial-gradient(circle at center, transparent 50%, rgba(255,255,255,0.3) 100%)'
-                : undefined
-            }}
-          />
-          {!isUnderwater && (
-            <>
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/60" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
-            </>
-          )}
-        </div>
       </main>
     </>
   )

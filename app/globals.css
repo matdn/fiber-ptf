@@ -1,3 +1,7 @@
+html,
+body {
+  overscroll-behavior-x: none;
+}
 @import "tailwindcss";
 
 @font-face {

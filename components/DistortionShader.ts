@@ -13,6 +13,7 @@ export const vertexShader = /* glsl */ `
 export const fragmentShader = /* glsl */ `
   uniform sampler2D tDiffuse;
   uniform vec2 distortion;
+  uniform float centerBias;
 
   varying vec2 vUv;
   
@@ -35,7 +36,16 @@ export const fragmentShader = /* glsl */ `
     
     // Lens distortion effect avec rayon modéré
     float smoothDist = smoothstep(0.0, 1.0, distanceFromCenter);
-    float distortionFactor = 1.0 + distortion.x * smoothDist * smoothDist * edgeMask;
+    float edgeProfile = smoothDist * smoothDist * edgeMask;
+
+    // Profil "vers le centre": max au centre, tombe vers les bords.
+    // NOTE: distanceFromCenter reaches ~1.414 at the corners; use a larger radius
+    // so the circular influence extends beyond the canvas.
+    float centerMask = 1.0 - smoothstep(0.0, 2.0, distanceFromCenter);
+    float centerProfile = centerMask * centerMask;
+
+    float profile = mix(edgeProfile, centerProfile, clamp(centerBias, 0.0, 1.0));
+    float distortionFactor = 1.0 + distortion.x * profile;
     vec2 distortedUv = shiftedUv * distortionFactor;
     vec2 transformedUv = getUnshiftedUv(distortedUv);
     
@@ -50,12 +60,14 @@ export const fragmentShader = /* glsl */ `
 
 export class DistortionShader extends ShaderMaterial {
   private distortionIntensity = 0
+  private centerBias = 0
 
   constructor() {
     super({
       uniforms: {
         tDiffuse: { value: null },
-        distortion: { value: new Vector2(0, 0) }
+        distortion: { value: new Vector2(0, 0) },
+        centerBias: { value: 0 }
       },
       vertexShader,
       fragmentShader
@@ -68,6 +80,7 @@ export class DistortionShader extends ShaderMaterial {
       this.distortionIntensity * ratio,
       this.distortionIntensity
     )
+    this.uniforms.centerBias.value = this.centerBias
   }
 
   setDistortion(value: number) {
@@ -77,5 +90,10 @@ export class DistortionShader extends ShaderMaterial {
       ease: 'power2.out',
       onUpdate: () => this.update()
     })
+  }
+
+  setCenterBias(value: number) {
+    this.centerBias = value
+    this.update()
   }
 }

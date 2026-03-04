@@ -17,7 +17,7 @@ const vertexShader = `
     pos.y += offset.y;
     
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-    gl_PointSize = 4.0;
+    gl_PointSize = 6.0;
   }
 `
 
@@ -31,10 +31,10 @@ const fragmentShader = `
     if(length(coord) > 0.5) discard;
     
     // Fade basé sur la distance du centre
-    float dist = length(vPosition.xy) * 0.02;
+    float dist = length(vPosition.xy) * 0.012;
     float fade = 1.0 - smoothstep(0.0, 1.0, dist);
     
-    gl_FragColor = vec4(pointColor, fade * 0.4);
+    gl_FragColor = vec4(pointColor, fade * 0.8);
   }
 `
 
@@ -66,9 +66,10 @@ export function DraggableSphere({ dragVelocity, isUnderwater = false }: Draggabl
       fragmentShader,
       transparent: true,
       depthWrite: false,
+      depthTest: false,
       uniforms: {
         offset: { value: new THREE.Vector2(0, 0) },
-        pointColor: { value: new THREE.Vector3(0.5, 0.5, 0.6) }
+        pointColor: { value: new THREE.Vector3(0.65, 0.65, 0.75) }
       }
     })
     
@@ -87,8 +88,8 @@ export function DraggableSphere({ dragVelocity, isUnderwater = false }: Draggabl
   useFrame(() => {
     if (meshRef.current) {
       const c = material.uniforms.pointColor.value as THREE.Vector3
-      if (isUnderwater) c.set(0.0, 0.0, 0.0)
-      else c.set(0.5, 0.5, 0.6)
+      if (isUnderwater) c.set(0.8, 0.8, 0.9)
+      else c.set(0.65, 0.65, 0.75)
     }
   })
 

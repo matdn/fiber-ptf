@@ -39,6 +39,21 @@ export type ProjectItem = {
   year?: string
 }
 
+export function slugifyProjectTitle(title: unknown) {
+  if (typeof title !== 'string') return ''
+  return title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+export function getProjectSlug(project: Pick<ProjectItem, 'title'> | null | undefined) {
+  return slugifyProjectTitle(project?.title)
+}
+
+export function getProjectBySlug(slug: unknown) {
+  if (typeof slug !== 'string') return null
+  const normalized = slug.toLowerCase().trim()
+  return PROJECTS.find((p) => getProjectSlug(p) === normalized) ?? null
+}
+
 const projects = rawProjects as RawProject[]
 
 export const PROJECTS: ProjectItem[] = projects.map((project) => {
