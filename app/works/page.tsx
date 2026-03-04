@@ -25,6 +25,11 @@ function Postprocessing({ distortionIntensity, isUnderwater }: { distortionInten
     return { effectComposer, distortionShader }
   }, [gl, scene, camera])
   
+  // Dispose render targets on unmount
+  useEffect(() => {
+    return () => { effectComposer.dispose() }
+  }, [effectComposer])
+
   // Update distortion intensity
   useEffect(() => {
     distortionShader.setDistortion(distortionIntensity)
@@ -127,6 +132,7 @@ function Grid({ onDistortionChange, onDragVelocity }: {
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)
       canvas.removeEventListener('pointerleave', handlePointerUp)
+      grid.dispose()
     }
   }, [grid, gl, onDragVelocity])
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -51,6 +51,16 @@ export function CurveParticles({ curvePosition, isUnderwater }: CurveParticlesPr
     })
   }, [isUnderwater])
   
+  // Dispose geometry on unmount (created once, no deps)
+  useEffect(() => {
+    return () => { particlesGeometry.dispose() }
+  }, [particlesGeometry])
+
+  // Dispose previous material whenever it is recreated (isUnderwater toggle)
+  useEffect(() => {
+    return () => { particlesMaterial.dispose() }
+  }, [particlesMaterial])
+
   useFrame((state) => {
     if (particlesRef.current && curvePosition) {
       // Positionner les particules autour de la courbe

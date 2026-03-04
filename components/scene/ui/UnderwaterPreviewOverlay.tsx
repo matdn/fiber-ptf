@@ -21,6 +21,7 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
 
   return (
     <div
+      
       className={`fixed z-30 ${canSwitchProject ? "pointer-events-auto" : "pointer-events-none"}`}
       style={{
         left: "50%",

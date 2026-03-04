@@ -12,7 +12,7 @@ export function TransitionFlashOverlay({
   return (
     <div
       ref={flashOverlayRef}
-      className="absolute inset-0 pointer-events-none bg-white"
+      className="absolute inset-0 pointer-events-none bg-black"
       style={{ opacity: 0, zIndex: 10 }}
     />
   );

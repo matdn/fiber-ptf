@@ -27,6 +27,8 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
   const lastChimeAtRef = useRef(0)
   const previousPointerLocalRef = useRef(new THREE.Vector3())
   const hasPointerSampleRef = useRef(false)
+  // Hoist raycaster — avoid allocating a new one every frame
+  const raycasterRef = useRef(new THREE.Raycaster())
 
   const originalPositions = useMemo(() => {
   const positions: THREE.Vector3[] = []
@@ -274,10 +276,18 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
     stopAllChimes()
   }, [isMuted])
 
+  // Dispose GPU resources on unmount
+  useEffect(() => {
+    return () => {
+      starsGeometry.dispose()
+      starsMaterial.dispose()
+    }
+  }, [starsGeometry, starsMaterial])
+
   useFrame((state, delta) => {
    
     if (pointsRef.current) {
-      const raycaster = new THREE.Raycaster()
+      const raycaster = raycasterRef.current
       raycaster.setFromCamera(state.pointer, camera)
       
       planeNormalRef.current.copy(camera.getWorldDirection(planeNormalRef.current)).normalize()

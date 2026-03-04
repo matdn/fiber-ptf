@@ -17,7 +17,21 @@ export function Water() {
   const lastAddTime = useRef(0)
   const lastMoveTime = useRef(0)
   const staticRipplePos = useRef(new THREE.Vector2(0, 0))
+  // Hoist to avoid per-frame allocations
+  const raycasterRef = useRef(new THREE.Raycaster())
+  const mouseVec = useRef(new THREE.Vector2())
   const { camera } = useThree()
+
+  // Memoize geometry — creating it inline in JSX would allocate a new one every render
+  const planeGeo = useMemo(() => new THREE.PlaneGeometry(400, 400, 10, 10), [])
+
+  // Dispose geometry + reflector RT on unmount
+  useEffect(() => {
+    return () => {
+      planeGeo.dispose()
+      reflectorRef.current?.dispose?.()
+    }
+  }, [planeGeo])
 
   useEffect(() => {
     const reflector = reflectorRef.current
@@ -194,10 +208,10 @@ export function Water() {
     uniforms.time.value = currentTime
     uniforms.currentTime.value = currentTime
         
-    // Use raycaster to get actual intersection with water plane
-    const raycaster = new THREE.Raycaster()
-    const mouse = new THREE.Vector2(state.pointer.x, state.pointer.y)
-    raycaster.setFromCamera(mouse, camera)
+    // Use memoized raycaster — no allocation per frame
+    const raycaster = raycasterRef.current
+    mouseVec.current.set(state.pointer.x, state.pointer.y)
+    raycaster.setFromCamera(mouseVec.current, camera)
         
     const intersects = raycaster.intersectObject(reflector)
     if (intersects.length > 0) {
@@ -246,10 +260,7 @@ export function Water() {
   return (
     <reflector
       ref={reflectorRef}
-      args={[
-        new THREE.PlaneGeometry(400, 400, 10, 10), // Réduire la taille et les segments
-        reflectorOptions
-      ]}
+      args={[planeGeo, reflectorOptions]}
     />
   )
 }

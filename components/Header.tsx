@@ -27,6 +27,11 @@ function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; 
         }
       }
     })
+    return () => {
+      // Dispose the cloned material created above
+      const mesh = curveClone.current as THREE.Mesh | null
+      ;(mesh?.material as THREE.Material | undefined)?.dispose?.()
+    }
   }, [scene])
 
   useFrame((state) => {

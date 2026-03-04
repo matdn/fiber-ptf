@@ -27,6 +27,7 @@ export type FullscreenProjectPayload = {
 type ShaderLike = {
   uniforms: Record<string, { value: unknown }>;
   vertexShader: string;
+  fragmentShader: string;
 };
 
 type CarouselProject = (typeof PROJECTS)[number];
@@ -53,6 +54,12 @@ function wrapToNearest(value: number, around: number, period: number) {
   return value + Math.round((around - value) / period) * period;
 }
 
+function wrapCentered(value: number, period: number) {
+  if (period <= 0) return value;
+  // Map to [-period/2, period/2) while staying continuous in `value`.
+  return value - Math.floor((value + period / 2) / period) * period;
+}
+
 function shortestAngleDiff(from: number, to: number) {
   return Math.atan2(Math.sin(to - from), Math.cos(to - from));
 }
@@ -66,9 +73,12 @@ export function UnderwaterProjectsCarousel({
   onCameraLookAtLockChange,
   onProjectOpen,
   onProjectClose,
+  onProjectCloseInitiated,
+  bwEnabled = true,
   closeRequestId,
   forceCloseRequestId,
   focusProjectRequest,
+  spinAngleRef,
 }: {
   isActive: boolean;
   centerPosition: THREE.Vector3 | null;
@@ -80,12 +90,16 @@ export function UnderwaterProjectsCarousel({
   onCameraLookAtLockChange?: (target: THREE.Vector3 | null) => void;
   onProjectOpen?: (project: ProjectItem) => void;
   onProjectClose?: () => void;
+  onProjectCloseInitiated?: () => void;
+  bwEnabled?: boolean;
   closeRequestId?: number;
   forceCloseRequestId?: number;
   focusProjectRequest?: { id: number; project: ProjectItem } | null;
+  spinAngleRef?: { current: number };
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const cellGroupRefs = useRef<Array<THREE.Group | null>>([]);
+
   const planeRefs = useRef<Array<THREE.Mesh | null>>([]);
   const hitPlaneRefs = useRef<Array<THREE.Mesh | null>>([]);
   const planeShaderRefs = useRef<Array<ShaderLike | null>>([]);
@@ -95,10 +109,19 @@ export function UnderwaterProjectsCarousel({
   const pendingCellRef = useRef<number | null>(null);
   const selectedCellRef = useRef<number | null>(null);
   const selectedProgressRef = useRef<number[]>([]);
+  const flatProgressRef = useRef<number[]>([]);
   const selectImpulseStartRef = useRef<number[]>([]);
   const projectOpenFiredRef = useRef(new Set<number>());
   // Cells currently animating back out — onProjectClose fires once selectedProgress < 0.05.
   const projectClosingRef = useRef(new Set<number>());
+
+  const closeTimeoutRef = useRef<number | null>(null);
+  const closeDelayMs = 1000;
+  const bwEnabledRef = useRef(bwEnabled);
+
+  useEffect(() => {
+    bwEnabledRef.current = bwEnabled;
+  }, [bwEnabled]);
 
   const scrollTargetRef = useRef(0);
   const scrollCurrentRef = useRef(0);
@@ -118,12 +141,15 @@ export function UnderwaterProjectsCarousel({
   const rows = 3;
   const cols = 6;
   const repeatCount = 3;
-  const totalRows = rows * repeatCount;
 
   const radius = 12;
   const ySpacing = 7.4;
   const loopRows = rows % 2 === 0 ? rows : rows * 2;
   const loopHeight = loopRows * ySpacing;
+  const scrollLoopHeight = loopHeight * repeatCount;
+  // Use a row count that is a multiple of `loopRows` so the alternating row parity
+  // (and therefore direction + offsets) repeats seamlessly.
+  const totalRows = loopRows * repeatCount;
   const rowSpeeds = useMemo(() => {
     return Array.from({ length: rows }, (_, row) => {
       const t = rows <= 1 ? 0 : row / (rows - 1);
@@ -146,6 +172,8 @@ export function UnderwaterProjectsCarousel({
   const selectedScaleBoost = 0.06;
   const selectedInDamping = 4.8;
   const selectedOutDamping = 6.2;
+  const flatInDamping = 9;
+  const flatOutDamping = 11;
   const fullscreenDistance = 3.5;
   const minDistanceToCamera = 2.8;
 
@@ -226,13 +254,21 @@ export function UnderwaterProjectsCarousel({
   };
 
   const clothOnBeforeCompile = (shader: ShaderLike, cellIndex: number) => {
+    const cell = cells[cellIndex];
     shader.uniforms.uPull = { value: 0 };
     shader.uniforms.uBulge = { value: 0 };
+    shader.uniforms.uBW = { value: bwEnabledRef.current ? 1 : 0 };
+    shader.uniforms.uFlat = { value: 0 };
+    shader.uniforms.uTime = { value: 0 };
+    shader.uniforms.uScroll = { value: 0 };
+    shader.uniforms.uRowY = { value: cell?.rowY ?? 0 };
+    shader.uniforms.uTheta = { value: cell?.baseTheta ?? 0 };
+    shader.uniforms.uWavePhase = { value: cell?.phase ?? cellIndex * 0.37 };
     planeShaderRefs.current[cellIndex] = shader;
 
     shader.vertexShader = shader.vertexShader.replace(
       "#include <common>",
-      `#include <common>\nuniform float uPull;\nuniform float uBulge;`,
+      `#include <common>\nuniform float uPull;\nuniform float uBulge;\nuniform float uTime;\nuniform float uScroll;\nuniform float uRowY;\nuniform float uTheta;\nuniform float uWavePhase;\nuniform float uFlat;`,
     );
 
     shader.vertexShader = shader.vertexShader.replace(
@@ -260,8 +296,67 @@ export function UnderwaterProjectsCarousel({
       transformed.z -= cornerLag * 0.11;
       transformed.x += radialDir.x * radialStretch + centeredUv.y * tangentialShear;
       transformed.y += radialDir.y * radialStretch - centeredUv.x * tangentialShear;
-      transformed.xy *= 1.0 - (centerFalloff * 0.08 + midFalloff * 0.05) * uBulge;`,
+      transformed.xy *= 1.0 - (centerFalloff * 0.08 + midFalloff * 0.05) * uBulge;
+
+      // --- Water-like floating deformation ---
+      // Coherent traveling waves (carousel-wide) + smaller ripples.
+      float t = uTime;
+      float motion = 1.0 - clamp(uFlat, 0.0, 1.0);
+      float breathe = 0.9 + 0.7 * sin(t * 0.75 + uTheta * 0.85 + uWavePhase * 0.22);
+      float waveMask = 0.65 + centerFalloff * 0.35;
+
+      // Large, slow swell that travels along the carousel (rowY, scroll).
+      float yWorld = (uRowY - uScroll);
+      float swell1 = sin(yWorld * 0.06 + t * 2.6 + uTheta * 0.7);
+      float swell2 = sin(yWorld * 0.035 - t * 1.9 + uTheta * 1.15 + uWavePhase);
+      float swell = (swell1 * 0.55 + swell2 * 0.45);
+
+      float swellAmp = 0.62 * waveMask * breathe * (1.0 - uBulge * 0.25) * motion;
+      transformed.z += swell * swellAmp;
+
+      // Smaller ripples (surface agitation).
+      float w1 = sin((uv.x * 6.2831853 * 1.15) + (t * 2.4) + uWavePhase);
+      float w2 = cos((uv.y * 6.2831853 * 1.35) - (t * 2.05) + uWavePhase * 1.7);
+      float wave = (w1 + w2) * 0.5;
+      float amp = 0.42 * waveMask * breathe * (1.0 - uBulge * 0.25) * motion;
+      transformed.z += wave * amp;
+
+      // Gentle up/down bob to sell the breathing motion.
+      transformed.z += sin(t * 1.1 + uTheta + uWavePhase) * (0.14 * waveMask) * (1.0 - uBulge * 0.25) * motion;
+
+      // Lateral wobble (makes the motion read as water, not just Z displacement).
+      float wobble = swell * (0.08 * waveMask) * (1.0 - uBulge * 0.35) * motion;
+      transformed.x += sin(yWorld * 0.03 + t * 2.2 + uv.y * 6.2831853 + uWavePhase) * wobble;
+      transformed.y += cos(yWorld * 0.025 - t * 1.85 + uv.x * 6.2831853 + uTheta) * wobble;`,
     );
+
+    shader.fragmentShader = shader.fragmentShader.replace(
+      "#include <common>",
+      `#include <common>\nuniform float uBW;`,
+    );
+
+    // Toggleable black & white (grayscale) in the fragment output.
+    // We do it here so it affects the textured meshBasicMaterial maps.
+    const bwConditional =
+      "float luma = dot(gl_FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));\n" +
+      "gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(luma), clamp(uBW, 0.0, 1.0));";
+
+    const withDither = shader.fragmentShader.replace(
+      "#include <dithering_fragment>",
+      `#include <dithering_fragment>\n${bwConditional}`,
+    );
+
+    if (withDither !== shader.fragmentShader) {
+      shader.fragmentShader = withDither;
+    } else {
+      const basicOut = "gl_FragColor = vec4( outgoingLight, diffuseColor.a );";
+      if (shader.fragmentShader.includes(basicOut)) {
+        shader.fragmentShader = shader.fragmentShader.replace(
+          basicOut,
+          `${basicOut}\n${bwConditional}`,
+        );
+      }
+    }
   };
 
   useEffect(() => {
@@ -270,6 +365,10 @@ export function UnderwaterProjectsCarousel({
     selectedProgressRef.current = Array.from(
       { length: cellCount },
       (_, index) => selectedProgressRef.current[index] || 0,
+    );
+    flatProgressRef.current = Array.from(
+      { length: cellCount },
+      (_, index) => flatProgressRef.current[index] || 0,
     );
     selectImpulseStartRef.current = Array.from(
       { length: cellCount },
@@ -319,6 +418,11 @@ export function UnderwaterProjectsCarousel({
   useEffect(() => {
     if (forceCloseRequestId === undefined) return;
 
+    if (closeTimeoutRef.current !== null) {
+      window.clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+
     pendingCellRef.current = null;
     selectedCellRef.current = null;
     projectOpenFiredRef.current.clear();
@@ -332,6 +436,15 @@ export function UnderwaterProjectsCarousel({
     onCameraMotionLockChange,
     onFullscreenProjectChange,
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current !== null) {
+        window.clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!focusProjectRequest || !isActive) return;
@@ -409,12 +522,15 @@ export function UnderwaterProjectsCarousel({
       scrollCurrentRef.current +=
         (scrollTargetRef.current - scrollCurrentRef.current) * 0.12;
 
-      if (scrollCurrentRef.current > loopHeight / 2) {
-        scrollCurrentRef.current -= loopHeight;
-        scrollTargetRef.current -= loopHeight;
-      } else if (scrollCurrentRef.current < -loopHeight / 2) {
-        scrollCurrentRef.current += loopHeight;
-        scrollTargetRef.current += loopHeight;
+      // Keep scroll values bounded without changing visuals:
+      // positions depend only on (rowY - scroll), so shifting both by the same
+      // loop multiple is invisible and avoids precision drift.
+      if (scrollLoopHeight > 0) {
+        const shift = Math.round(scrollCurrentRef.current / scrollLoopHeight) * scrollLoopHeight;
+        if (shift !== 0) {
+          scrollCurrentRef.current -= shift;
+          scrollTargetRef.current -= shift;
+        }
       }
 
       spinVelocityRef.current *= spinDamping ** (delta * 60);
@@ -439,10 +555,9 @@ export function UnderwaterProjectsCarousel({
             tmp.targetPos
               .copy(centerPosition)
               .addScaledVector(tmp.dirWorld, cameraPull);
-            tmp.targetPos.y -= scrollCurrentRef.current;
             groupRef.current.position.lerp(tmp.targetPos, 0.08);
           } else {
-            tmp.fallback.set(0, -scrollCurrentRef.current, 0);
+            tmp.fallback.set(0, 0, 0);
             groupRef.current.position.lerp(tmp.fallback, 0.1);
           }
 
@@ -471,10 +586,9 @@ export function UnderwaterProjectsCarousel({
           const pendingFloatY = 0;
 
           const targetScroll = wrapToNearest(
-            scrollCurrentRef.current +
-              (pendingCell.rowY + pendingFloatY - desiredCameraY),
+            pendingCell.rowY + pendingFloatY - desiredCameraY,
             scrollCurrentRef.current,
-            loopHeight,
+            scrollLoopHeight,
           );
 
           angleRef.current = THREE.MathUtils.damp(
@@ -499,8 +613,14 @@ export function UnderwaterProjectsCarousel({
               ),
             ) < 0.03;
           const alignedY =
-            Math.abs(pendingCell.rowY + pendingFloatY - tmp.cameraLocal.y) <
-            0.02;
+            Math.abs(
+              wrapCentered(
+                pendingCell.rowY - scrollCurrentRef.current,
+                scrollLoopHeight,
+              ) +
+                pendingFloatY -
+                tmp.cameraLocal.y,
+            ) < 0.02;
 
           if (alignedTheta && alignedY) {
             selectedCellRef.current = pendingCell.cellIndex;
@@ -517,11 +637,14 @@ export function UnderwaterProjectsCarousel({
       tmp.targetPos
         .copy(centerPosition)
         .addScaledVector(tmp.dirWorld, cameraPull);
-      tmp.targetPos.y -= scrollCurrentRef.current;
       groupRef.current.position.lerp(tmp.targetPos, 0.08);
     } else {
-      tmp.fallback.set(0, -scrollCurrentRef.current, 0);
+      tmp.fallback.set(0, 0, 0);
       groupRef.current.position.lerp(tmp.fallback, 0.1);
+    }
+
+    if (spinAngleRef) {
+      spinAngleRef.current = angleRef.current;
     }
 
     tmp.cameraLocal.copy(camera.position);
@@ -578,9 +701,14 @@ export function UnderwaterProjectsCarousel({
       const floatY = isFocusedCell ? 0 : Math.sin(t * 0.7 + cell.phase) * 0.09;
       const floatZ = Math.cos(t * 0.9 + cell.phase) * 0.06;
 
+      const wrappedRowY = wrapCentered(
+        cell.rowY - scrollCurrentRef.current,
+        scrollLoopHeight,
+      );
+
       cellGroup.position.set(
         Math.cos(theta) * radius,
-        cell.rowY + floatY,
+        wrappedRowY + floatY,
         Math.sin(theta) * radius + floatZ,
       );
 
@@ -651,7 +779,7 @@ export function UnderwaterProjectsCarousel({
 
         camera.getWorldQuaternion(tmp.cameraWorldQuaternion);
         groupRef.current.getWorldQuaternion(tmp.groupWorldQuaternion);
-        tmp.groupWorldQuaternionInverse.copy(tmp.groupWorldQuaternion).invert();
+        // tmp.groupWorldQuaternionInverse.copy(tmp.groupWorldQuaternion).invert();
         tmp.targetQuaternion
           .copy(tmp.groupWorldQuaternionInverse)
           .multiply(tmp.cameraWorldQuaternion);
@@ -712,11 +840,31 @@ export function UnderwaterProjectsCarousel({
       }
 
       const shader = planeShaderRefs.current[cell.cellIndex];
+      const isOpenedPlane = projectOpenFiredRef.current.has(cell.cellIndex);
+      const flatTarget = isOpenedPlane ? 1 : 0;
+      const flatCurrent = flatProgressRef.current[cell.cellIndex] || 0;
+      const flatDamping = flatTarget > flatCurrent ? flatInDamping : flatOutDamping;
+      const flat = THREE.MathUtils.damp(flatCurrent, flatTarget, flatDamping, delta);
+      flatProgressRef.current[cell.cellIndex] = flat;
+
+      const motion = 1 - flat;
       if (shader?.uniforms?.uPull) {
-        shader.uniforms.uPull.value = selectedProgress;
+        shader.uniforms.uPull.value = selectedProgress * motion;
       }
       if (shader?.uniforms?.uBulge) {
-        shader.uniforms.uBulge.value = bulgeStrength;
+        shader.uniforms.uBulge.value = bulgeStrength * motion;
+      }
+      if (shader?.uniforms?.uBW) {
+        shader.uniforms.uBW.value = bwEnabledRef.current ? 1 : 0;
+      }
+      if (shader?.uniforms?.uFlat) {
+        shader.uniforms.uFlat.value = flat;
+      }
+      if (shader?.uniforms?.uTime) {
+        shader.uniforms.uTime.value = state.clock.elapsedTime;
+      }
+      if (shader?.uniforms?.uScroll) {
+        shader.uniforms.uScroll.value = scrollCurrentRef.current;
       }
     }
 
@@ -879,20 +1027,35 @@ export function UnderwaterProjectsCarousel({
                 selectedCellRef.current === cell.cellIndex ||
                 pendingCellRef.current === cell.cellIndex;
 
-              pendingCellRef.current = isClosing ? null : cell.cellIndex;
+              if (isClosing) {
+                // Delay the close animation to let UI overlays animate out.
+                onProjectCloseInitiated?.();
+                if (closeTimeoutRef.current !== null) return;
+
+                const cellIndex = cell.cellIndex;
+                closeTimeoutRef.current = window.setTimeout(() => {
+                  closeTimeoutRef.current = null;
+                  pendingCellRef.current = null;
+                  selectedCellRef.current = null;
+                  hoveredCellRef.current = cellIndex;
+                  onCameraMotionLockChange?.(false);
+                  onCameraLookAtLockChange?.(null);
+                  if (projectOpenFiredRef.current.has(cellIndex)) {
+                    // Move from open → closing; onProjectClose fires in useFrame.
+                    projectOpenFiredRef.current.delete(cellIndex);
+                    projectClosingRef.current.add(cellIndex);
+                  } else {
+                    projectOpenFiredRef.current.delete(cellIndex);
+                  }
+                  onFullscreenProjectChange?.(null);
+                }, closeDelayMs);
+                return;
+              }
+
+              pendingCellRef.current = cell.cellIndex;
               selectedCellRef.current = null;
               hoveredCellRef.current = cell.cellIndex;
-              onCameraMotionLockChange?.(!isClosing);
-              if (isClosing) {
-                onCameraLookAtLockChange?.(null);
-                if (projectOpenFiredRef.current.has(cell.cellIndex)) {
-                  // Move from open → closing; onProjectClose fires in useFrame.
-                  projectOpenFiredRef.current.delete(cell.cellIndex);
-                  projectClosingRef.current.add(cell.cellIndex);
-                } else {
-                  projectOpenFiredRef.current.delete(cell.cellIndex);
-                }
-              }
+              onCameraMotionLockChange?.(true);
               onFullscreenProjectChange?.(null);
             }}
           >

@@ -134,6 +134,14 @@ export function Stars({ count = 1500, position = [0, 0, 0], radius = 200 }: Star
     pointsRef.current.userData.excludeFromReflector = true
     pointsRef.current.name = 'Stars'
   }, [])
+
+  // Dispose GPU resources on unmount
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      material.dispose()
+    }
+  }, [geometry, material])
   
   return <points ref={pointsRef} geometry={geometry} material={material} />
 }

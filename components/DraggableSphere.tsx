@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -75,11 +75,20 @@ export function DraggableSphere({ dragVelocity, isUnderwater = false }: Draggabl
     return { geometry, material }
   }, [])
   
-  // Mettre à jour la couleur quand isUnderwater change
+  // Dispose GPU resources on unmount
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      material.dispose()
+    }
+  }, [geometry, material])
+
+  // Mettre à jour la couleur quand isUnderwater change — reuse the existing Vector3, no allocation
   useFrame(() => {
     if (meshRef.current) {
-      const color = isUnderwater ? new THREE.Vector3(0.0, 0.0, 0.0) : new THREE.Vector3(0.5, 0.5, 0.6)
-      material.uniforms.pointColor.value = color
+      const c = material.uniforms.pointColor.value as THREE.Vector3
+      if (isUnderwater) c.set(0.0, 0.0, 0.0)
+      else c.set(0.5, 0.5, 0.6)
     }
   })
 

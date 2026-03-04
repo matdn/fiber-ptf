@@ -18,6 +18,7 @@ import type {
 import { UnderwaterRaysEffect } from "./scene/UnderwaterRaysEffect";
 import { FullscreenProjectOverlay } from "./scene/ui/FullscreenProjectOverlay";
 import { ProjectDetailView } from "./scene/ui/ProjectDetailView";
+import { ProjectDetailFloatOverlay } from "./scene/ui/ProjectDetailFloatOverlay";
 import { SceneVignetteOverlay } from "./scene/ui/SceneVignetteOverlay";
 import { SpaceTextOverlay } from "./scene/ui/SpaceTextOverlay";
 import { TransitionFlashOverlay } from "./scene/ui/TransitionFlashOverlay";
@@ -68,6 +69,9 @@ export default function Scene({
 
   // Project detail open/close state
   const [openProject, setOpenProject] = useState<ProjectItem | null>(null);
+  const [projectCloseInitiatedId, setProjectCloseInitiatedId] = useState(0);
+  const [isProjectCloseDelayActive, setIsProjectCloseDelayActive] =
+    useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [carouselCloseAnimRequestId, setCarouselCloseAnimRequestId] =
     useState(0);
@@ -209,31 +213,11 @@ export default function Scene({
     }
 
     if (curveObject) {
-      const scale = curveObject.scale;
-      const initialScale = { x: scale.x, y: scale.y, z: scale.z };
       const curveDelay = duration * (toUnderwater ? 0.22 : 0.16);
 
       gsap.delayedCall(curveDelay, () => {
         setShowTransitionOverlay(true);
       });
-
-      gsap
-        .timeline()
-        .to(scale, {
-          x: initialScale.x * 28,
-          y: initialScale.y * 28,
-          z: initialScale.z * 28,
-          duration: duration * 0.2,
-          delay: curveDelay,
-          ease: "power3.out",
-        })
-        .to(scale, {
-          x: initialScale.x,
-          y: initialScale.y,
-          z: initialScale.z,
-          duration: duration * 0.48,
-          ease: "elastic.out(1, 0.48)",
-        });
     }
 
     gsap.delayedCall(duration * 0.25, () => {
@@ -366,6 +350,7 @@ export default function Scene({
         scrollContainerRef.current.style.overflowY = "auto";
       return project;
     });
+    setIsProjectCloseDelayActive(false);
   }, []);
 
   // Called when the carousel closes itself (click on plane or click outside).
@@ -375,6 +360,7 @@ export default function Scene({
       scrollContainerRef.current.scrollTo({ top: 0 });
     if (scrollContainerRef.current)
       scrollContainerRef.current.style.overflowY = "hidden";
+    setIsProjectCloseDelayActive(false);
     setOpenProject(null);
   }, []);
 
@@ -382,6 +368,11 @@ export default function Scene({
   // The view is cleared only once the animation finishes (handleProjectClosedByCarousel).
   const handleProjectClose = useCallback(() => {
     setCarouselCloseAnimRequestId((v) => v + 1);
+  }, []);
+
+  const handleProjectCloseInitiated = useCallback(() => {
+    setProjectCloseInitiatedId((v) => v + 1);
+    setIsProjectCloseDelayActive(true);
   }, []);
 
   const handleHoverPopoverChange = useCallback(
@@ -415,6 +406,11 @@ export default function Scene({
     setHoverProjectPopover(null);
   }, [openProject]);
 
+  useEffect(() => {
+    if (openProject) return;
+    setIsProjectCloseDelayActive(false);
+  }, [openProject]);
+
   return (
     <div
       className="w-full h-screen fixed"
@@ -438,6 +434,8 @@ export default function Scene({
           <SceneCanvas
             isUnderwater={isUnderwater}
             isInSpace={isInSpace}
+            isProjectDetailView={Boolean(openProject)}
+            isProjectCloseDelayActive={isProjectCloseDelayActive}
             instantSpaceEntry={instantSpaceEntry}
             transitionState={transitionState}
             effects={effects}
@@ -452,6 +450,7 @@ export default function Scene({
             onFullscreenProjectChange={setFullscreenProject}
             onProjectOpen={handleProjectOpen}
             onProjectClose={handleProjectClosedByCarousel}
+            onProjectCloseInitiated={handleProjectCloseInitiated}
             closeRequestId={carouselCloseAnimRequestId}
             forceCloseRequestId={carouselCloseRequestId}
             focusProjectRequest={focusProjectRequest}
@@ -470,6 +469,12 @@ export default function Scene({
       </div>
 
       {/* Fixed UI overlays */}
+      <ProjectDetailFloatOverlay
+        isActive={Boolean(openProject)}
+        project={openProject}
+        hideRequestId={projectCloseInitiatedId}
+      />
+
       <SpaceTextOverlay isInSpace={isInSpace} textMaskRef={textMaskRef} />
 
       <TransitionFlashOverlay

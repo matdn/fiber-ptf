@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getProjectMeshColor } from "@/lib/projectColors";
 
 // ── Logo geometry (same paths as contact page) ──────────────────────────────
 const SVG_W = 2072;
@@ -14,7 +15,7 @@ const PATHS = [
   "M415 412V2.2419e-06L603 0C728.369 -1.495e-06 830 101.631 830 227V412H415Z",
 ];
 
-function makeLogoImage(size: number): HTMLCanvasElement {
+function makeLogoImage(size: number, fillStyle: string): HTMLCanvasElement {
   const w = size;
   const h = Math.round(size * LOGO_ASPECT);
   const oc = document.createElement("canvas");
@@ -24,12 +25,12 @@ function makeLogoImage(size: number): HTMLCanvasElement {
   if (!ctx) return oc;
   const s = w / SVG_W;
   ctx.scale(s, s);
-  ctx.fillStyle = "#0a0a0a";
+  ctx.fillStyle = fillStyle;
   for (const d of PATHS) ctx.fill(new Path2D(d));
   return oc;
 }
 
-const COUNT = 1360;
+const COUNT = 200;
 const LOGO_W = 28;
 
 const SOCIALS = [
@@ -43,9 +44,10 @@ const SOCIALS = [
 interface Props {
   onBack: () => void;
   projectTitle: string;
+  fillStyle?: string;
 }
 
-export function ProjectDetailFooter({ onBack, projectTitle }: Props) {
+export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const footerRef = useRef<HTMLElement>(null);
   const maskRef = useRef<HTMLDivElement>(null);
@@ -107,7 +109,8 @@ export function ProjectDetailFooter({ onBack, projectTitle }: Props) {
     let cleanup: (() => void) | undefined;
 
     import("matter-js").then(({ Engine, Bodies, Body, World, Events }) => {
-      const logoImg = makeLogoImage(LOGO_W);
+      const logoColor = fillStyle ?? getProjectMeshColor(projectTitle);
+      const logoImg = makeLogoImage(LOGO_W, logoColor);
       const logoH = logoImg.height;
 
       const getWH = () => ({ W: canvas.offsetWidth, H: canvas.offsetHeight });
@@ -282,19 +285,19 @@ export function ProjectDetailFooter({ onBack, projectTitle }: Props) {
     });
 
     return () => cleanup?.();
-  }, []);
+  }, [fillStyle, projectTitle]);
 
   return (
     <footer
       ref={footerRef}
-      className="relative w-full bg-[#F9F9F9] overflow-hidden"
+      className="relative w-full bg-[#ffffff] overflow-hidden"
       style={{ maxHeight: "100vh" }}
     >
       {/* Matter.js canvas */}
       <canvas
         ref={canvasRef}
         className="absolute bottom-0 inset-0 w-full h-full"
-        style={{ display: "block", backgroundColor: "#F9F9F9" }}
+        style={{ display: "block", backgroundColor: "#000000" }}
       />
 
       {/* Content overlay */}
@@ -330,6 +333,7 @@ export function ProjectDetailFooter({ onBack, projectTitle }: Props) {
               style={{
                 fontSize: "clamp(5rem, 15vw, 14rem)",
                 letterSpacing: "-0.04em",
+                color: "white", 
               }}
             >
               PORTFOLIO
@@ -338,45 +342,7 @@ export function ProjectDetailFooter({ onBack, projectTitle }: Props) {
         </div>
 
         {/* Bottom bar */}
-        <div className="px-8 pb-10 pt-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between pointer-events-auto">
-          {/* Socials */}
-          <nav className="flex flex-wrap gap-x-7 gap-y-2 absolute">
-            {SOCIALS.map((s) => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-black/40 hover:text-black transition-colors"
-                style={{
-                  fontSize: "0.68rem",
-                  letterSpacing: "0.2em",
-                  textTransform: "uppercase",
-                }}
-              >
-                {s.label}
-              </a>
-            ))}
-          </nav>
-
-          {/* Project title + back */}
-          <div className="flex items-center gap-8">
-            <span
-              className="text-black/20 uppercase"
-              style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-            >
-              {projectTitle}
-            </span>
-            <button
-              type="button"
-              onClick={onBack}
-              className="uppercase text-black/40 hover:text-black transition-colors"
-              style={{ fontSize: "0.68rem", letterSpacing: "0.22em" }}
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
+        
       </div>
     </footer>
   );

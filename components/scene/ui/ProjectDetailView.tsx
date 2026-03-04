@@ -4,7 +4,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { memo, useEffect, useRef } from "react";
-import { PROJECTS, type ProjectItem } from "@/lib/projectImages";
+import type { ProjectItem } from "@/lib/projectImages";
 import { ProjectDetailFooter } from "./ProjectDetailFooter";
 
 type Props = {
@@ -17,17 +17,12 @@ export const ProjectDetailView = memo(function ProjectDetailView({
   onClose,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
-
-  const projectIndex = PROJECTS.findIndex((p) => p.title === project.title);
-  const indexLabel = String(projectIndex + 1).padStart(2, "0");
-  const totalLabel = String(PROJECTS.length).padStart(2, "0");
-
+  const footerSentinelRef = useRef<HTMLDivElement>(null);
   const mediaBlocks = project.detailBlocks.filter(
     (b) => b.type === "image" || b.type === "video",
   );
   const heroMedia   = mediaBlocks[0] ?? null;
-  const secondMedia = mediaBlocks[1] ?? null;
-  const galleryMedia = mediaBlocks.slice(2);
+  const galleryMedia = mediaBlocks.slice(1);
 
   useEffect(() => {
     if (!rootRef.current) return;
@@ -38,11 +33,6 @@ export const ProjectDetailView = memo(function ProjectDetailView({
 
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        "[data-pdv-index]",
-        { autoAlpha: 0, y: 24 },
-        { autoAlpha: 1, y: 0, duration: 0.6, ease: "power3.out" },
-      );
       gsap.fromTo(
         "[data-pdv-hero-title]",
         { autoAlpha: 0, y: 36 },
@@ -95,102 +85,143 @@ export const ProjectDetailView = memo(function ProjectDetailView({
       className="w-full"
       style={{ fontFamily: "inherit", position: "relative" }}
     >
+      <div
+        id="project-detail-footer-sentinel"
+        ref={footerSentinelRef}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: "40vh",
+          pointerEvents: "none",
+        }}
+      />
       {/* Content layer — slides over sticky footer */}
       <div style={{ position: "relative", zIndex: 1, background: "#fefefe" }}>
 
-        
-
-        {/* ── Hero: full-width framed ──────────────────────────────── */}
-        <div data-pdv-hero-media style={{ padding: "2rem 2.5rem 0" }}>
+        {/* ── Hero: split (text left / video right) ───────────────── */}
+        <section style={{ padding: "2rem 2.5rem 0" }}>
           <div
-            className="relative overflow-hidden w-full"
-            style={{ height: "62vh", background: "rgba(0,0,0,0.04)", borderRadius: "4px" }}
+            className="grid grid-cols-1 lg:grid-cols-2"
+            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Mabry, sans-serif" }}
           >
-            {heroMedia?.type === "video" ? (
-              <video src={heroMedia.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
-            ) : heroMedia?.type === "image" ? (
-              <Image src={heroMedia.src} alt="" fill sizes="90vw" style={{ objectFit: "cover" }} />
-            ) : (
-              <Image src={project.imageUrl} alt="" fill sizes="90vw" style={{ objectFit: "cover" }} />
-            )}
-          </div>
-        </div>
+            <div className="flex flex-col" style={{ minHeight: "62vh" }}>
+              <p
+                style={{
+                  fontSize: "0.95rem",
+                  letterSpacing: "0.2em",
+                  textTransform: "uppercase",
+                  color: "rgba(0,0,0)",
+                  paddingTop: "0.4rem",
+                  fontWeight: 800,
+                }}
+              >
+                {project.title}
+              </p>
 
-        <div style={{ height: "clamp(5rem, 10vw, 9rem)" }} />
+              <div style={{ flex: 1 }} />
 
-        {/* ── Info split: text left / second media right ──────────── */}
-        <div
-          data-pdv-hero-title
-          className="grid grid-cols-1 lg:grid-cols-2"
-          style={{ padding: "0 2.5rem", gap: "3rem", alignItems: "flex-start" }}
-        >
-          <div className="flex flex-col" style={{ gap: "2.4rem" }}>
-            <p style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(0,0,0,0.28)" }}>
-              {project.description}
-            </p>
+              <h1
+                data-pdv-hero-title
+                style={{
+                  fontSize: "clamp(1.1rem, 3.2vw, 2.1rem)",
+                  fontWeight: 500,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.12,
+                  color: "#000000",
+                  maxWidth: "40vw",
+                  marginBottom: "1.4rem",
+                }}
+              >
+                {project.description}
+              </h1>
 
-            <h1
+              {project.detailBlocks
+                .filter((b) => b.type === "text")
+                .slice(0, 1)
+                .map((b, i) =>
+                  b.type === "text" ? (
+                    <p
+                      // biome-ignore lint/suspicious/noArrayIndexKey: stable index
+                      key={i}
+                      data-pdv-hero-copy
+                      style={{
+                        fontSize: "0.8rem",
+                        lineHeight: 1.82,
+                        color: "rgba(0,0,0,0.38)",
+                        maxWidth: "40vw",
+                      }}
+                    >
+                      {b.content}
+                    </p>
+                  ) : null,
+                )}
+
+              {/* {project.tags && project.tags.length > 0 && (
+                <div
+                  data-pdv-tags
+                  className="flex flex-wrap gap-2"
+                  style={{ paddingTop: "1.2rem" }}
+                >
+                  {project.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        padding: "0.3rem 0.8rem",
+                        borderRadius: "999px",
+                        border: "1px solid rgba(0,0,0,0.12)",
+                        fontSize: "0.62rem",
+                        letterSpacing: "0.08em",
+                        color: "rgba(0,0,0,0.4)",
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )} */}
+            </div>
+
+            <div
+              data-pdv-hero-media
+              className="relative overflow-hidden w-full "
               style={{
-                fontSize: "clamp(3.5rem, 8vw, 7.5rem)",
-                fontWeight: 800,
-                letterSpacing: "-0.04em",
-                lineHeight: 0.92,
-                color: "#000000",
-                textTransform: "uppercase",
+                height: "80vh",
+                background: "rgba(0,0,0,0.04)",
+                borderRadius: "4px",
               }}
             >
-              {project.title}
-            </h1>
-
-            {project.detailBlocks
-              .filter((b) => b.type === "text")
-              .map((b, i) =>
-                b.type === "text" ? (
-                  <p
-                    // biome-ignore lint/suspicious/noArrayIndexKey: stable index
-                    key={i}
-                    data-pdv-hero-copy
-                    style={{ fontSize: "0.8rem", lineHeight: 1.82, color: "rgba(0,0,0,0.38)", maxWidth: "50ch" }}
-                  >
-                    {b.content}
-                  </p>
-                ) : null,
-              )}
-
-            {project.tags && project.tags.length > 0 && (
-              <div data-pdv-tags className="flex flex-wrap gap-2" style={{ paddingTop: "0.5rem" }}>
-                {project.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      padding: "0.3rem 0.8rem",
-                      borderRadius: "999px",
-                      border: "1px solid rgba(0,0,0,0.12)",
-                      fontSize: "0.62rem",
-                      letterSpacing: "0.08em",
-                      color: "rgba(0,0,0,0.4)",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {secondMedia && (
-            <div
-              className="relative overflow-hidden"
-              style={{ height: "clamp(360px, 52vh, 620px)", borderRadius: "4px", background: "rgba(0,0,0,0.04)" }}
-            >
-              {secondMedia.type === "video" ? (
-                <video src={secondMedia.src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
+              {heroMedia?.type === "video" ? (
+                <video
+                  src={heroMedia.src}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover scale-105"
+                />
+              ) : heroMedia?.type === "image" ? (
+                <Image
+                  src={heroMedia.src}
+                  alt=""
+                  fill
+                  sizes="45vw"
+                  style={{ objectFit: "cover" }}
+                />
               ) : (
-                <Image src={secondMedia.src} alt="" fill sizes="45vw" style={{ objectFit: "cover" }} />
+                <Image
+                  src={project.imageUrl}
+                  alt=""
+                  fill
+                  sizes="45vw"
+                  style={{ objectFit: "cover" }}
+                />
               )}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
 
         <div style={{ height: "clamp(4rem, 8vw, 7rem)" }} />
 
@@ -226,12 +257,12 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                 // biome-ignore lint/suspicious/noArrayIndexKey: stable index
                 key={i}
                 data-pdv-animate
-                style={{ padding: "3rem 2.5rem 2.5rem", borderTop: "1px solid rgba(0,0,0,0.07)" }}
+                style={{ padding: "3rem 2.5rem 2.5rem" }}
               >
                 <h2
                   style={{
                     fontSize: "clamp(1.8rem, 3.5vw, 3rem)",
-                    fontWeight: 700,
+                    fontWeight: 200,
                     letterSpacing: "-0.03em",
                     lineHeight: 1.1,
                     color: "#000",
@@ -277,10 +308,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
       </div>
 
       {/* Footer — sticky, revealed as content scrolls past */}
-      <div
-        id="project-detail-footer-sentinel"
-        style={{ position: "sticky", bottom: 0, zIndex: 0 }}
-      >
+      <div style={{ position: "sticky", bottom: 0, zIndex: 0 }}>
         <ProjectDetailFooter onBack={onClose} projectTitle={project.title} />
       </div>
     </div>

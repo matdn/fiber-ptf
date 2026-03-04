@@ -312,4 +312,17 @@ export class ProjectsGrid extends THREE.Group {
       }
     })
   }
+
+  dispose() {
+    this.cards.forEach((card) => {
+      if (card.mesh) {
+        card.mesh.geometry.dispose()
+        const mat = card.mesh.material as THREE.MeshBasicMaterial
+        mat.map?.dispose()
+        mat.dispose()
+      }
+    })
+    this.cards.clear()
+    this.clear()
+  }
 }

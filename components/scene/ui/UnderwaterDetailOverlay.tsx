@@ -4,6 +4,17 @@ import { memo, useMemo } from "react";
 import type { ProjectDetailBlock } from "@/lib/projectImages";
 import type { ProjectPopoverPayload } from "../UnderwaterProjectsCarousel";
 
+type UnderwaterDetailBlock = Extract<
+  ProjectDetailBlock,
+  { type: "text" | "image" | "video" }
+>;
+
+function isUnderwaterDetailBlock(
+  block: ProjectDetailBlock,
+): block is UnderwaterDetailBlock {
+  return block.type === "text" || block.type === "image" || block.type === "video";
+}
+
 export const UnderwaterDetailOverlay = memo(function UnderwaterDetailOverlay({
   isUnderwater,
   isInSpace,
@@ -15,14 +26,14 @@ export const UnderwaterDetailOverlay = memo(function UnderwaterDetailOverlay({
 }) {
   const hasDetailProject = Boolean(detailProjectPopover);
 
-  const detailBlocks = useMemo<ProjectDetailBlock[]>(() => {
+  const detailBlocks = useMemo<UnderwaterDetailBlock[]>(() => {
     if (!detailProjectPopover) return [];
 
     if (
       detailProjectPopover.detailBlocks &&
       detailProjectPopover.detailBlocks.length > 0
     ) {
-      return detailProjectPopover.detailBlocks;
+      return detailProjectPopover.detailBlocks.filter(isUnderwaterDetailBlock);
     }
 
     return [{ type: "text", content: detailProjectPopover.description }];
@@ -35,7 +46,7 @@ export const UnderwaterDetailOverlay = memo(function UnderwaterDetailOverlay({
       const baseKey =
         block.type === "text"
           ? `text-${block.content}`
-          : `${block.type}-${block.src}`;
+          : `media-${block.type}-${block.src}`;
       const keyCount = seenKeys.get(baseKey) ?? 0;
       seenKeys.set(baseKey, keyCount + 1);
 

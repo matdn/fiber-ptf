@@ -25,6 +25,11 @@ function Postprocessing({ distortionIntensity }: { distortionIntensity: number }
     return { effectComposer, distortionShader }
   }, [gl, scene, camera])
   
+  // Dispose render targets on unmount
+  useEffect(() => {
+    return () => { effectComposer.dispose() }
+  }, [effectComposer])
+
   // Update distortion intensity
   useEffect(() => {
     distortionShader.setDistortion(distortionIntensity)
@@ -85,6 +90,7 @@ function Grid({ scrollProgress, onDistortionChange, containerRef }: {
       if (scrollTriggerRef.current) {
         scrollTriggerRef.current.kill()
       }
+      grid.dispose()
     }
   }, [grid, containerRef])
 

@@ -1,9 +1,8 @@
 "use client";
 
 import { Preload } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Bloom, EffectComposer, SMAA } from "@react-three/postprocessing";
-import { Fluid } from "@whatisjery/react-fluid-distortion";
 import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { ProjectItem } from "@/lib/projectImages";
@@ -24,6 +23,8 @@ import { UnderwaterProjectsCarousel } from "./UnderwaterProjectsCarousel";
 export const SceneCanvas = memo(function SceneCanvas({
   isUnderwater,
   isInSpace,
+  isProjectDetailView,
+  isProjectCloseDelayActive,
   instantSpaceEntry,
   transitionState,
   effects,
@@ -38,6 +39,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onFullscreenProjectChange,
   onProjectOpen,
   onProjectClose,
+  onProjectCloseInitiated,
   closeRequestId,
   forceCloseRequestId,
   focusProjectRequest,
@@ -45,6 +47,8 @@ export const SceneCanvas = memo(function SceneCanvas({
 }: {
   isUnderwater: boolean;
   isInSpace: boolean;
+  isProjectDetailView?: boolean;
+  isProjectCloseDelayActive?: boolean;
   instantSpaceEntry?: boolean;
   transitionState: SceneTransitionState;
   effects: SceneEffects;
@@ -59,6 +63,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onFullscreenProjectChange: (payload: FullscreenProjectPayload | null) => void;
   onProjectOpen?: (project: ProjectItem) => void;
   onProjectClose?: () => void;
+  onProjectCloseInitiated?: () => void;
   closeRequestId?: number;
   forceCloseRequestId: number;
   focusProjectRequest?: { id: number; project: ProjectItem } | null;
@@ -68,31 +73,63 @@ export const SceneCanvas = memo(function SceneCanvas({
   const [isCameraLockedByCarousel, setIsCameraLockedByCarousel] =
     useState(false);
   const cameraLookAtLockRef = useRef<THREE.Vector3 | null>(null);
+  const underwaterCarouselSpinAngleRef = useRef(0);
+  const setBloomIntensityRef = useRef<((value: number) => void) | null>(null);
+
+  function BloomFadeController() {
+    useFrame((_, delta) => {
+      const setBloomIntensity = setBloomIntensityRef.current;
+      if (!setBloomIntensity) return;
+
+      // During transitions we let the transition code drive bloom.
+      if (transitionState.isTransitioning) {
+        if (typeof transitionState.bloomIntensity === "number") {
+          setBloomIntensity(transitionState.bloomIntensity);
+        }
+        return;
+      }
+
+      // In the main scene (surface) bloom should fade out quickly.
+      if (!isUnderwater) {
+        const current = transitionState.bloomIntensity;
+        const next = THREE.MathUtils.damp(current, 0, 12, delta);
+        setBloomIntensity(next);
+        transitionState.bloomIntensity = next;
+      }
+    });
+
+    return null;
+  }
   const handleCameraLookAtLockChange = useCallback(
     (target: THREE.Vector3 | null) => {
       cameraLookAtLockRef.current = target ? target.clone() : null;
     },
     [],
   );
-  const isFluidActive = transitionState.showFluidEffect && isUnderwater;
   const composerChildren = useMemo(() => {
     const nodes = [
       <primitive key="displacement" object={effects.displacementEffect} />,
     ];
 
-    // Only add Bloom when it is actually doing something visible.
-    if (transitionState.bloomIntensity > 0.05) {
-      nodes.push(
-        <Bloom
-          key="bloom"
-          intensity={transitionState.bloomIntensity}
-          luminanceThreshold={0.82}
-          luminanceSmoothing={0.3}
-          radius={0.5}
-          mipmapBlur={false}
-        />,
-      );
-    }
+    // Keep Bloom mounted so we can fade it out via ref without needing rerenders.
+    nodes.push(
+      <Bloom
+        // biome-ignore lint/suspicious/noExplicitAny: effect instance type comes from postprocessing
+        ref={(instance: any) => {
+          setBloomIntensityRef.current = instance
+            ? (value: number) => {
+                instance.intensity = value;
+              }
+            : null;
+        }}
+        key="bloom"
+        intensity={transitionState.bloomIntensity}
+        luminanceThreshold={0.82}
+        luminanceSmoothing={0.3}
+        radius={0.5}
+        mipmapBlur={false}
+      />,
+    );
 
     // SMAA only when NOT underwater — underwater has heavier post-processing
     // (fluid, fog) and SMAA's edge-pass is visible on surface geometry only.
@@ -100,22 +137,21 @@ export const SceneCanvas = memo(function SceneCanvas({
       nodes.push(<SMAA key="smaa" />);
     }
 
-    if (isFluidActive) {
-      nodes.unshift(
-        <Fluid
-          key="fluid"
-          rainbow={false}
-          intensity={0.6}
-          fluidColor="#000000"
-          radius={0.5}
-        />,
-      );
-    }
+    // if (transitionState.showFluidEffect && isUnderwater) {
+    //   nodes.unshift(
+    //     <Fluid
+    //       key="fluid"
+    //       rainbow={false}
+    //       intensity={0.6}
+    //       fluidColor="#000000"
+    //       radius={0.5}
+    //     />,
+    //   );
+    // }
 
     return nodes;
   }, [
     effects.displacementEffect,
-    isFluidActive,
     isUnderwater,
     transitionState.bloomIntensity,
   ]);
@@ -123,6 +159,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   return (
     <Canvas
       camera={{ position: [-20, -10, -10], fov: 40 }}
+      frameloop={isProjectDetailView && !isUnderwater ? "never" : "always"}
       dpr={[1, 2]}
       gl={{
         antialias: false,
@@ -143,7 +180,7 @@ export const SceneCanvas = memo(function SceneCanvas({
         <fog
           attach="fog"
           args={[
-            "#ffffff",
+            "#000",
             transitionState.underwaterFog.near,
             transitionState.underwaterFog.far,
           ]}
@@ -165,12 +202,19 @@ export const SceneCanvas = memo(function SceneCanvas({
           (instantSpaceEntry && isInSpace) || isCameraLockedByCarousel,
         )}
       />
-      <CurveRotation curveObject={curveObject} />
+      {isUnderwater && (
+        <CurveRotation
+          curveObject={curveObject}
+          isUnderwater={isUnderwater}
+          spinAngleRef={underwaterCarouselSpinAngleRef}
+        />
+      )}
 
       {isInSpace && <Stars count={2000} />}
       {isInSpace && <Stars count={800} position={[0, 200, 0]} radius={80} />}
 
       <Suspense fallback={null}>
+        <BloomFadeController />
         <Model
           onCurveFound={onCurveFound}
           onCurveRefFound={onCurveRefFound}
@@ -191,13 +235,18 @@ export const SceneCanvas = memo(function SceneCanvas({
               onFullscreenProjectChange={onFullscreenProjectChange}
               onProjectOpen={onProjectOpen}
               onProjectClose={onProjectClose}
+              onProjectCloseInitiated={onProjectCloseInitiated}
+              bwEnabled={
+                !Boolean(isProjectDetailView) ||
+                Boolean(isProjectCloseDelayActive)
+              }
               closeRequestId={closeRequestId}
               onCameraMotionLockChange={setIsCameraLockedByCarousel}
               onCameraLookAtLockChange={handleCameraLookAtLockChange}
               forceCloseRequestId={forceCloseRequestId}
               focusProjectRequest={focusProjectRequest}
+              spinAngleRef={underwaterCarouselSpinAngleRef}
             />
-            <CurveParticles curvePosition={curvePosition} isUnderwater={true} />
           </>
         )}
         <OrbitingRocks
