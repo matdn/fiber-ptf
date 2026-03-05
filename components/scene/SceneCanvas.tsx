@@ -146,7 +146,7 @@ export const SceneCanvas = memo(function SceneCanvas({
       nodes.push(<SMAA key="smaa" />);
     }
 
-    if (transitionState.showFluidEffect && isUnderwater) {
+    if (isUnderwater && Boolean(isProjectDetailView)) {
       nodes.unshift(
         <Fluid
           key="fluid"
@@ -161,6 +161,7 @@ export const SceneCanvas = memo(function SceneCanvas({
     return nodes;
   }, [
     effects.displacementEffect,
+    isProjectDetailView,
     isUnderwater,
     transitionState.bloomIntensity,
   ]);
