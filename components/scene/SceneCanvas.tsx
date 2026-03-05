@@ -75,6 +75,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   const cameraLookAtLockRef = useRef<THREE.Vector3 | null>(null);
   const underwaterCarouselSpinAngleRef = useRef(0);
   const setBloomIntensityRef = useRef<((value: number) => void) | null>(null);
+  const surfaceBloomTarget = 0.03;
 
   function BloomFadeController() {
     useFrame((_, delta) => {
@@ -89,10 +90,15 @@ export const SceneCanvas = memo(function SceneCanvas({
         return;
       }
 
-      // In the main scene (surface) bloom should fade out quickly.
-      if (!isUnderwater) {
+      // In the main scene (surface), keep a light bloom so the curve stays glowing.
+      if (!isUnderwater && !isInSpace) {
         const current = transitionState.bloomIntensity;
-        const next = THREE.MathUtils.damp(current, 0, 12, delta);
+        const next = THREE.MathUtils.damp(
+          current,
+          surfaceBloomTarget,
+          8,
+          delta,
+        );
         setBloomIntensity(next);
         transitionState.bloomIntensity = next;
       }
@@ -107,9 +113,7 @@ export const SceneCanvas = memo(function SceneCanvas({
     [],
   );
   const composerChildren = useMemo(() => {
-    const nodes = [
-      <primitive key="displacement" object={effects.displacementEffect} />,
-    ];
+    const nodes = [];
 
     // Keep Bloom mounted so we can fade it out via ref without needing rerenders.
     nodes.push(
@@ -129,6 +133,10 @@ export const SceneCanvas = memo(function SceneCanvas({
         radius={0.5}
         mipmapBlur={false}
       />,
+    );
+
+    nodes.push(
+      <primitive key="displacement" object={effects.displacementEffect} />,
     );
 
     // SMAA only when NOT underwater — underwater has heavier post-processing

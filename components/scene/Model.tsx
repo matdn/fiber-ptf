@@ -63,7 +63,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
       } else if (isUnderwater) {
         curve.material = new THREE.MeshPhysicalMaterial({
         transmission: 1,
-        thickness: 10,
+        thickness: 2,
         roughness: 0,
         metalness: 0.1,
         ior: 1.9,
@@ -79,6 +79,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
         curve.material = new THREE.MeshPhysicalMaterial({
           color: 0xffffff,
           emissive: new THREE.Color(0xffffff),
+          emissiveIntensity: 20.2,
           toneMapped: false,
           transparent: true,
           opacity: 1,
