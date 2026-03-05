@@ -2,6 +2,12 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { PROJECTS, type ProjectItem } from '@/lib/projectImages'
 
+const EXCLUDED_GRID_PROJECT_TITLES = new Set(['altitude101'])
+
+function normalizeProjectTitle(title: string) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
 interface Card {
   id: number
   projectIndex: number
@@ -54,8 +60,11 @@ export class ProjectsGrid extends THREE.Group {
   private textureLoader = new THREE.TextureLoader()
   private textureCache: Map<string, THREE.Texture> = new Map()
   private textureCallbacks: Map<string, Array<(texture: THREE.Texture) => void>> = new Map()
-  private projects: ProjectItem[] = PROJECTS
-  private imageUrls = PROJECTS.map((project) => project.imageUrl)
+  private projects: ProjectItem[] =
+    PROJECTS.filter(
+      (project) => !EXCLUDED_GRID_PROJECT_TITLES.has(normalizeProjectTitle(project.title)),
+    )
+  private imageUrls = this.projects.map((project) => project.imageUrl)
 
   private introTimeouts: number[] = []
 

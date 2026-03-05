@@ -259,7 +259,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
     if (cursorSpeed < 0.08) return
 
     const now = performance.now()
-    const cooldown = intensity > 5 ? 24 : intensity > 3 ? 34 : 46
+    const cooldown = intensity > 5 ? 24 : intensity > 1 ? 4 : 46
     if (now - lastChimeAtRef.current < cooldown) return
     lastChimeAtRef.current = now
 
