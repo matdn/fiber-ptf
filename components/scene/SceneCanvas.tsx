@@ -19,6 +19,7 @@ import type {
   ProjectPopoverPayload,
 } from "./UnderwaterProjectsCarousel";
 import { UnderwaterProjectsCarousel } from "./UnderwaterProjectsCarousel";
+import { Fluid } from "@whatisjery/react-fluid-distortion";
 
 export const SceneCanvas = memo(function SceneCanvas({
   isUnderwater,
@@ -75,7 +76,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   const cameraLookAtLockRef = useRef<THREE.Vector3 | null>(null);
   const underwaterCarouselSpinAngleRef = useRef(0);
   const setBloomIntensityRef = useRef<((value: number) => void) | null>(null);
-  const surfaceBloomTarget = 0.03;
+  const surfaceBloomTarget = 0.12;
 
   function BloomFadeController() {
     useFrame((_, delta) => {
@@ -128,10 +129,10 @@ export const SceneCanvas = memo(function SceneCanvas({
         }}
         key="bloom"
         intensity={transitionState.bloomIntensity}
-        luminanceThreshold={0.82}
-        luminanceSmoothing={0.3}
-        radius={0.5}
-        mipmapBlur={false}
+        luminanceThreshold={0.72}
+        luminanceSmoothing={0.45}
+        radius={0.75}
+        mipmapBlur
       />,
     );
 
@@ -145,17 +146,17 @@ export const SceneCanvas = memo(function SceneCanvas({
       nodes.push(<SMAA key="smaa" />);
     }
 
-    // if (transitionState.showFluidEffect && isUnderwater) {
-    //   nodes.unshift(
-    //     <Fluid
-    //       key="fluid"
-    //       rainbow={false}
-    //       intensity={0.6}
-    //       fluidColor="#000000"
-    //       radius={0.5}
-    //     />,
-    //   );
-    // }
+    if (transitionState.showFluidEffect && isUnderwater) {
+      nodes.unshift(
+        <Fluid
+          key="fluid"
+          rainbow={false}
+          intensity={0.6}
+          fluidColor="#000000"
+          radius={0.5}
+        />,
+      );
+    }
 
     return nodes;
   }, [

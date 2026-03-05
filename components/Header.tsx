@@ -180,7 +180,7 @@ export default function Header({
               </a>
             </div>
 
-            <div className="flex items-center uppercase gap-4 overflow-hidden max-w-0 ml-0 opacity-0 -translate-x-2 pointer-events-none transition-all 
+            <div className="flex items-center   gap-4 overflow-hidden max-w-0 ml-0 opacity-0 -translate-x-2 pointer-events-none transition-all 
             duration-800 ease-out group-hover:max-w-[320px] group-hover:ml-4 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto">
               {onWorkToggle ? (
                 <button
@@ -192,7 +192,7 @@ export default function Header({
                     }
                     onWorkToggle()
                   }}
-                  className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
+                  className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
                 >
                   works
                 </button>
@@ -204,7 +204,7 @@ export default function Header({
 
               <Link
                 href="/laboratory"
-                className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
+                className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
               >
                 labs
               </Link>
@@ -219,7 +219,7 @@ export default function Header({
                     }
                     onSpaceToggle?.(true)
                   }}
-                  className="text-white/80 uppercase hover:text-white transition-colors whitespace-nowrap"
+                  className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
                 >
                   about
                 </button>
