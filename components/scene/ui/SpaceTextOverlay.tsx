@@ -27,7 +27,7 @@ const OVERLAY_LINES = [
     weight: 300,
     description: [
       "I write code that moves, reacts and surprises.",
-      "Specialised in WebGL, Three.js and immersive front-end experiences",
+      "Specialised in WebGL, TSL and Three.js and immersive front-end experiences",
       "where design meets technology.",
     ],
   },
