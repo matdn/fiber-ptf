@@ -105,7 +105,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
         <section style={{ padding: "2rem 2.5rem 0" }}>
           <div
             className="grid grid-cols-1 lg:grid-cols-2"
-            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Mabry, sans-serif" }}
+            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif" }}
           >
             <div className="flex flex-col" style={{ minHeight: "62vh" }}>
               <p
@@ -116,6 +116,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   color: "rgba(0,0,0)",
                   paddingTop: "0.4rem",
                   fontWeight: 800,
+                  fontFamily: '"Mabry Pro", sans-serif',
                 }}
               >
                 {project.title}

@@ -46,6 +46,7 @@ const OVERLAY_TEXT_STYLE: React.CSSProperties = {
   lineHeight: 0.8,
   color: "#ffffff",
   textAlign: "center",
+  fontWeight: 900,
 };
 
 const OVERLAY_TEXT_STYLE_HOVER: React.CSSProperties = {

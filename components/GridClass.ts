@@ -101,7 +101,18 @@ export class ProjectsGrid extends THREE.Group {
     const isPortrait = (gridX + gridY) % 2 === 0
     
     const id = this.nextCardId++
-    const projectIndex = this.projects.length > 0 ? id % this.projects.length : 0
+    const N = this.projects.length
+    // Assign project deterministically by grid position so no two adjacent cells
+    // (orthogonal or diagonal) ever share the same project, regardless of creation order.
+    // b = vertical step (ceil(N/2) — scattered, confirmed good by user)
+    // a = horizontal step: smallest a≥2 such that a, a+b, a-b are all non-zero mod N,
+    //     giving a scattered horizontal sequence instead of the sequential 0,1,2,3,…
+    const b = Math.ceil(N / 2)
+    let a = 2
+    while (a < N && (a % N === 0 || (a + b) % N === 0 || ((a - b) % N + N) % N === 0)) {
+      a++
+    }
+    const projectIndex = N > 0 ? ((gridX * a + gridY * b) % N + N) % N : 0
 
     return {
       id,
@@ -128,9 +139,8 @@ export class ProjectsGrid extends THREE.Group {
   }
 
   private createCardMesh(card: Card) {
-    // Sélectionner une image de manière cyclique
-    const imageIndex = card.id % this.imageUrls.length
-    const imageUrl = this.imageUrls[imageIndex]
+    // Image driven by the position-based projectIndex (no sequential id)
+    const imageUrl = this.imageUrls[card.projectIndex]
     
     // Créer un mesh temporaire avec des dimensions par défaut
     const defaultWidth = card.isPortrait ? 3.5 : 4.5

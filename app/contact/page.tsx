@@ -2,6 +2,7 @@
 
 import Header from '@/components/Header'
 import { CustomCursor } from '@/components/CustomCursor'
+import Footer from '@/components/Footer'
 import { useEffect, useRef } from 'react'
 
 const SVG_W = 2072
@@ -255,7 +256,7 @@ export default function ContactPage() {
       <div className="relative z-10 flex flex-col items-center justify-start pt-[24dvh] px-6 pointer-events-none mix-blend-difference">
         <h1
           style={{
-            fontFamily: 'Mabry, sans-serif',
+            fontFamily: 'Neopixel, sans-serif',
             fontSize: 'clamp(3rem, 9vw, 9rem)',
             fontWeight: 400,
             letterSpacing: '-0.04em',
@@ -270,7 +271,7 @@ export default function ContactPage() {
         </h1>
          <h2  
             style={{
-            fontFamily: 'Mabry, sans-serif',
+            fontFamily: 'Neopixel, sans-serif',
             fontSize: 'clamp(1rem, 2vw, 2rem)',
             fontWeight: 200,
             letterSpacing: '-0.04em',
@@ -282,6 +283,7 @@ export default function ContactPage() {
           }}><a href="/">contact me here!</a></h2>
       </div>
       <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />
+      <Footer dark />
      
     </main>
   )

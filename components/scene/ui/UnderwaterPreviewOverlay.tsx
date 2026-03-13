@@ -82,7 +82,7 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
           />
           <span
             style={{
-              fontFamily: "Mabry, sans-serif",
+              fontFamily: "Neopixel, sans-serif",
               color: "#1d1f2c",
               fontSize: "13px",
               lineHeight: 1.2,
@@ -98,7 +98,7 @@ export const UnderwaterPreviewOverlay = memo(function UnderwaterPreviewOverlay({
           {canSwitchProject && (
             <span
               style={{
-                fontFamily: "Mabry, sans-serif",
+                fontFamily: "Neopixel, sans-serif",
                 color: "#ffffff",
                 mixBlendMode: "difference",
                 fontSize: "12px",

@@ -99,7 +99,7 @@ export const UnderwaterDetailOverlay = memo(function UnderwaterDetailOverlay({
               style={{
                 margin: 0,
                 color: "#8d97ff",
-                fontFamily: "Mabry, sans-serif",
+                fontFamily: "Neopixel, sans-serif",
                 fontSize: "22px",
                 fontWeight: 400,
                 letterSpacing: "0.01em",
@@ -169,7 +169,7 @@ export const UnderwaterDetailOverlay = memo(function UnderwaterDetailOverlay({
                   style={{
                     margin: index === 0 ? "28px 0 0" : "16px 0 0",
                     color: "#282b34",
-                    fontFamily: "Mabry, sans-serif",
+                    fontFamily: "Neopixel, sans-serif",
                     fontSize: "17px",
                     lineHeight: 1.45,
                     letterSpacing: "0.005em",

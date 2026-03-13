@@ -76,7 +76,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   const cameraLookAtLockRef = useRef<THREE.Vector3 | null>(null);
   const underwaterCarouselSpinAngleRef = useRef(0);
   const setBloomIntensityRef = useRef<((value: number) => void) | null>(null);
-  const surfaceBloomTarget = 0.12;
+  const surfaceBloomTarget = 0.1;
 
   function BloomFadeController() {
     useFrame((_, delta) => {
@@ -116,25 +116,26 @@ export const SceneCanvas = memo(function SceneCanvas({
   const composerChildren = useMemo(() => {
     const nodes = [];
 
-    // Keep Bloom mounted so we can fade it out via ref without needing rerenders.
-    nodes.push(
-      <Bloom
-        // biome-ignore lint/suspicious/noExplicitAny: effect instance type comes from postprocessing
-        ref={(instance: any) => {
-          setBloomIntensityRef.current = instance
-            ? (value: number) => {
-                instance.intensity = value;
-              }
-            : null;
-        }}
-        key="bloom"
-        intensity={transitionState.bloomIntensity}
-        luminanceThreshold={0.72}
-        luminanceSmoothing={0.45}
-        radius={0.75}
-        mipmapBlur
-      />,
-    );
+    if (!isUnderwater) {
+      nodes.push(
+        <Bloom
+          // biome-ignore lint/suspicious/noExplicitAny: effect instance type comes from postprocessing
+          ref={(instance: any) => {
+            setBloomIntensityRef.current = instance
+              ? (value: number) => {
+                  instance.intensity = value;
+                }
+              : null;
+          }}
+          key="bloom"
+          intensity={transitionState.bloomIntensity}
+          luminanceThreshold={0.42}
+          luminanceSmoothing={0.45}
+          radius={0.65}
+          mipmapBlur
+        />,
+      );
+    }
 
     nodes.push(
       <primitive key="displacement" object={effects.displacementEffect} />,
@@ -170,27 +171,29 @@ export const SceneCanvas = memo(function SceneCanvas({
     <Canvas
       camera={{ position: [-20, -10, -10], fov: 40 }}
       frameloop={isProjectDetailView && !isUnderwater ? "never" : "always"}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       gl={{
         antialias: false,
         powerPreference: "high-performance",
         alpha: false,
         logarithmicDepthBuffer: false,
         precision: "highp",
+        preserveDrawingBuffer: true,
       }}
-      onCreated={({ camera, scene }) => {
+      onCreated={({ camera, scene, gl }) => {
+        gl.domElement.id = 'r3f-main-canvas';
         onCreated({ camera, scene });
         if (isInSpace && instantSpaceEntry) {
           camera.position.set(0, 200, 30);
         }
       }}
     >
-      <color attach="background" args={["#000"]} />
+      {isUnderwater ? <color attach="background" args={["#fff "]} /> : <color attach="background" args={["#000"]} />}
       {isUnderwater && (
         <fog
           attach="fog"
           args={[
-            "#000",
+            "#fff",
             transitionState.underwaterFog.near,
             transitionState.underwaterFog.far,
           ]}
@@ -207,6 +210,7 @@ export const SceneCanvas = memo(function SceneCanvas({
         curveStarPosition={curveStarPosition}
         scrollOffset={transitionState.scrollOffset}
         isInSpace={isInSpace}
+        transitionState={transitionState}
         lockedLookAtTargetRef={cameraLookAtLockRef}
         lockSpaceCamera={Boolean(
           (instantSpaceEntry && isInSpace) || isCameraLockedByCarousel,
@@ -263,12 +267,11 @@ export const SceneCanvas = memo(function SceneCanvas({
           centerPosition={curveStarPosition || fallbackOrbitCenter}
           isVisible={isInSpace}
         />
-        <group
-          rotation={isUnderwater ? [Math.PI / 2, 0, 0] : [-Math.PI / 2, 0, 0]}
-          position={isUnderwater ? [0, 0, 0] : [0, -20, 0]}
-        >
-          <Water />
-        </group>
+        {!isUnderwater && (
+          <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -20, 0]}>
+            <Water />
+          </group>
+        )}
       </Suspense>
 
       {/* {!isUnderwater && <EffectComposer multisampling={0}>{composerChildren}</EffectComposer>} */}

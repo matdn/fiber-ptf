@@ -143,9 +143,10 @@ export default function SoundWaveToggle() {
     <button
       type="button"
       onClick={toggleSound}
-      className="flex items-center justify-center w-[55px] h-[55px] rounded-full hover:bg-white/10 transition-colors duration-200 pointer-events-auto cursor-pointer overflow-visible"
+      className="soundButton flex items-center justify-center w-[55px] h-[55px] hover:bg-white/10 transition-colors duration-200 pointer-events-auto cursor-pointer overflow-visible"
         aria-label={isMuted ? 'Unmute sound' : 'Mute sound'}
         title={isMuted ? 'Unmute' : 'Mute'}
+       
     >
       <canvas
         ref={canvasRef}

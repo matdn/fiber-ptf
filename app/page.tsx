@@ -64,7 +64,7 @@ function MobileSimpleLanding() {
 
       <section
         className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center text-white"
-        style={{ mixBlendMode: 'difference', fontFamily: 'Mabry, sans-serif' }}
+        style={{ mixBlendMode: 'difference', fontFamily: 'Neopixel, sans-serif' }}
       >
         <p className="max-w-[13ch] text-[12vw] font-medium uppercase leading-[0.9] tracking-[0.08em]">
           MATIS CREATES DIGITAL EXPERIENCES

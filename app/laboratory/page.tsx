@@ -104,7 +104,7 @@ function LaboratoryProjectPreviewOverlay({
           />
           <span
             style={{
-              fontFamily: 'Mabry, sans-serif',
+              fontFamily: 'Neopixel, sans-serif',
               color: '#1d1f2c',
               fontSize: '13px',
               lineHeight: 1.2,
@@ -117,7 +117,7 @@ function LaboratoryProjectPreviewOverlay({
           </span>
           <span
             style={{
-              fontFamily: 'Mabry, sans-serif',
+              fontFamily: 'Neopixel, sans-serif',
               color: '#ffffff',
               mixBlendMode: 'difference',
               fontSize: '12px',

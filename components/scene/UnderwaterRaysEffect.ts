@@ -45,7 +45,7 @@ export class UnderwaterRaysEffect extends Effect {
         void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
           vec2 st = uv * 2.0;
           
-          // Créer des rayons animés avec plusieurs couches de bruit
+          // Créer des rayons animés avec deux couches de bruit
           float rays = 0.0;
           
           // Premier layer de rayons
@@ -58,11 +58,7 @@ export class UnderwaterRaysEffect extends Effect {
           float angle2 = time * 0.08 + 1.5;
           vec2 dir2 = vec2(cos(angle2), sin(angle2)) * 0.2;
           float noise2 = snoise(st * 2.5 + dir2 + time * 0.15);
-          rays += max(0.0, noise2) * 0.3;
-          
-          // Troisième layer pour plus de complexité
-          float noise3 = snoise(st * 4.0 + time * 0.08);
-          rays += max(0.0, noise3) * 0.2;
+          rays += max(0.0, noise2) * 0.4;
           
           // Créer un gradient vertical (plus de lumière en haut)
           float verticalGradient = smoothstep(0.3, 1.0, uv.y);

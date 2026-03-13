@@ -6,7 +6,7 @@ import PreventHorizontalNavigation from '@/components/PreventHorizontalNavigatio
 import GifFaviconPlayer from "@/components/GifFaviconPlayer";
 
 export const metadata: Metadata = {
-  title: "Next.js Three.js Portfolio",
+  title: "mat4folio",
   description: "A 3D portfolio built with Next.js and Three.js",
   icons: {
     icon: [{ url: "/turningM.gif", type: "image/gif" }],

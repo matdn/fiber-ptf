@@ -251,7 +251,7 @@ export default function Constellation({ isVisible }: { isVisible: boolean }) {
 
         // Dessiner le texte avec scale en blanc
         const fontSize = 13 + (point.scale - 1) * 12
-        ctx.font = `${fontSize}px Mabry`
+        ctx.font = `${fontSize}px Neopixel`
         const textOpacity = point.opacity
         ctx.fillStyle = `rgba(255, 255, 255, ${textOpacity})`
         ctx.textAlign = 'center'

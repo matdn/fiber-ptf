@@ -10,6 +10,7 @@ interface CameraFollowMouseProps {
   curveStarPosition: THREE.Vector3 | null;
   scrollOffset: number;
   isInSpace: boolean;
+  transitionState?: { isTransitioning: boolean };
   lockedLookAtTargetRef?: { current: THREE.Vector3 | null };
   lockSpaceCamera?: boolean;
 }
@@ -20,6 +21,7 @@ export function CameraFollowMouse({
   curveStarPosition,
   scrollOffset,
   isInSpace,
+  transitionState,
   lockedLookAtTargetRef,
   lockSpaceCamera = false,
 }: CameraFollowMouseProps) {
@@ -122,6 +124,10 @@ export function CameraFollowMouse({
   }, [isInSpace]);
 
   useFrame(() => {
+    // While a scene transition is running, GSAP owns the camera position.
+    // Skip all lerping so the two don't fight each other.
+    if (transitionState?.isTransitioning) return;
+
     if (initialPosition && !isInSpace) {
       if (!lockSpaceCamera) {
         const offsetX = pointer.x * 10;

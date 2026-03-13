@@ -168,7 +168,7 @@ export default function Header({
     <>
       <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: 'difference' }}>
         {/* Desktop Menu */}
-        <nav className="group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Mabry, sans-serif' }}>
+        <nav className="group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Neopixel, sans-serif' }}>
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <a href="/">
@@ -254,7 +254,7 @@ export default function Header({
         {isMobileMenuOpen && (
           <nav 
             className="md:hidden fixed bottom-24 right-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl z-50"
-            style={{ fontFamily: 'Mabry, sans-serif' }}
+            style={{ fontFamily: 'Neopixel, sans-serif' }}
           >
             <ul className="flex flex-col gap-4">
               <li>

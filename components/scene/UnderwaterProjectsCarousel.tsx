@@ -173,8 +173,8 @@ export function UnderwaterProjectsCarousel({
   const spinDamping = 0.92;
   const baseSpinSpeed = 0.24;
 
-  const widthSegments = 80;
-  const heightSegments = 50;
+  const widthSegments = 40;
+  const heightSegments = 24;
   const tubeScale = 1.8;
   const selectedPullDistance = 2.6;
   const selectedScaleBoost = 0.06;

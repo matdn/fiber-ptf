@@ -12,27 +12,6 @@ body {
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Mabry';
-  src: url('/fonts/MabryPro-Regular.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Mabry Pro";
-  src: url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.eot");
-  src: url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.eot?#iefix") format("embedded-opentype"),
-    url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.woff2") format("woff2"),
-    url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.woff") format("woff"),
-    url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.ttf") format("truetype"),
-    url("https://db.onlinewebfonts.com/t/fc0ba89248939ae27a47ce54c1f44737.svg#Mabry Pro") format("svg");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -99,6 +78,10 @@ header{
   /* transform: translate(-50%, 150%); */
   animation: headerSlideReverse 1s ease-out forwards;
 } 
+
+.soundButton{
+  border-radius: 0px;
+}
 
 @keyframes headerSlide {
   from {
