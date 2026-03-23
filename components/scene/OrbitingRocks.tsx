@@ -29,7 +29,7 @@ export function OrbitingRocks({ centerPosition, isVisible }: OrbitingRocksProps)
       if (child instanceof THREE.Mesh) {
         const clonedMesh = child.clone()
         const radius = 15 + Math.random() * 20
-        const speed = 0.2 + Math.random() * 0.3
+        const speed = 0.08 + Math.random() * 0.08
         const angle = Math.random() * Math.PI * 2
         
         const orbitAxis = new THREE.Vector3(

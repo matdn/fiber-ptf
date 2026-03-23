@@ -1,21 +1,19 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ProjectsGrid } from '@/components/GridClass'
 import { EffectComposer as ThreeComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js'
-import { EffectComposer, SMAA, ChromaticAberration } from '@react-three/postprocessing'
 import { DistortionShader } from '@/components/DistortionShader'
 import Header from '@/components/Header'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { DraggableSphere } from '@/components/DraggableSphere'
 import { CustomCursor } from '@/components/CustomCursor'
-import type { ProjectItem } from '@/lib/projectImages'
+import { getProjectSlug, type ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
 
-const LABS_EXTERNAL_URL = 'https://tympanus.net/Tutorials/3DImageTubeR3F/'
-
-function Postprocessing({ distortionIntensity, isUnderwater }: { distortionIntensity: number; isUnderwater: boolean }) {
+function Postprocessing({ distortionIntensity }: { distortionIntensity: number }) {
   const { gl, scene, camera } = useThree()
   
   const { effectComposer, distortionShader } = useMemo(() => {
@@ -218,8 +216,8 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
       }
     }
 
-    const handlePointerUp = (e?: PointerEvent) => {
-      if (e) {
+    const finishPointerInteraction = ({ e, shouldPickProject }: { e?: PointerEvent; shouldPickProject: boolean }) => {
+      if (e && shouldPickProject) {
         const rect = canvas.getBoundingClientRect()
         const x = e.clientX - rect.left
         const y = e.clientY - rect.top
@@ -246,6 +244,14 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
       }
     }
 
+    const handlePointerUp = (e?: PointerEvent) => {
+      finishPointerInteraction({ e, shouldPickProject: true })
+    }
+
+    const handlePointerLeave = (e?: PointerEvent) => {
+      finishPointerInteraction({ e, shouldPickProject: false })
+    }
+
     const handleWheel = (e: WheelEvent) => {
       // Prevent horizontal swipe from triggering browser back/forward.
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
@@ -260,14 +266,16 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
     canvas.addEventListener('pointermove', handlePointerMove)
     canvas.addEventListener('pointerdown', handlePointerDown)
     canvas.addEventListener('pointerup', handlePointerUp)
-    canvas.addEventListener('pointerleave', handlePointerUp)
+    canvas.addEventListener('pointerleave', handlePointerLeave)
+    canvas.addEventListener('pointercancel', handlePointerLeave)
     canvas.addEventListener('wheel', handleWheel, { passive: false })
 
     return () => {
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointerup', handlePointerUp)
-      canvas.removeEventListener('pointerleave', handlePointerUp)
+      canvas.removeEventListener('pointerleave', handlePointerLeave)
+      canvas.removeEventListener('pointercancel', handlePointerLeave)
       canvas.removeEventListener('wheel', handleWheel)
       grid.dispose()
     }
@@ -313,12 +321,13 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
         onIdleProjectChange={onIdleProjectChange}
       />
       <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
-      <Postprocessing distortionIntensity={distortionIntensity} isUnderwater={isUnderwater} />
+      <Postprocessing distortionIntensity={distortionIntensity} />
     </>
   )
 }
 
 export default function LaboratoryPage() {
+  const router = useRouter()
   const [distortionIntensity, setDistortionIntensity] = useState(0)
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
@@ -327,7 +336,7 @@ export default function LaboratoryPage() {
   return (
     <>
       <Header isUnderwater={isUnderwater} />
-      <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />
+      <CustomCursor enabled={true} environment="surface" showDragOverlay={false} onRequest={() => {}} />
       <main className="w-full h-screen relative">
         <Canvas
           camera={{ position: [0, 0, 12], fov: 60 }}
@@ -355,7 +364,9 @@ export default function LaboratoryPage() {
           project={selectedProject}
           onOpen={() => {
             if (!selectedProject) return
-            window.location.assign(LABS_EXTERNAL_URL)
+            const slug = getProjectSlug(selectedProject)
+            if (!slug) return
+            router.push(`/laboratory/${slug}`)
           }}
         />
       </main>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
+import { CustomCursor } from '@/components/CustomCursor'
 import { ProjectDetailView } from '@/components/scene/ui/ProjectDetailView'
 import { getProjectBySlug } from '@/lib/projectImages'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
@@ -22,6 +23,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
   return (
     <>
       <Header isUnderwater={isUnderwater} />
+      <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />
       <main className="w-full h-screen overflow-y-auto">
         <ProjectDetailView project={project} onClose={() => router.push('/laboratory')} />
       </main>

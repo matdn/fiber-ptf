@@ -8,9 +8,10 @@ import { useUnderwater } from '@/contexts/UnderwaterContext'
 
 type SweatWithSpheresProps = {
   interactionCenter?: [number, number, number]
+  transitionProgress?: number
 }
 
-export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: SweatWithSpheresProps) {
+export default function SweatWithSpheres({ interactionCenter = [0, 0, 0], transitionProgress = 1 }: SweatWithSpheresProps) {
   const { scene } = useGLTF('/sweat.glb')
   const groupRef = useRef<THREE.Group>(null)
   const pointsRef = useRef<THREE.Points>(null)
@@ -159,6 +160,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
           time: { value: 0 },
           maxPointSize: { value: 10.0 },
           minDepth: { value: 2.0 },
+          globalOpacity: { value: 0.0 },
         },
         vertexShader: `
           attribute float size;
@@ -184,6 +186,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
           }
         `,
         fragmentShader: `
+          uniform float globalOpacity;
           varying float vOpacity;
           varying vec3 vColor;
           varying float vRotation;
@@ -203,7 +206,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
             float centerDist = length(coord);
             float center = 1.0 - smoothstep(0.0, 0.12, centerDist);
 
-            float alpha = max(glow * 0.65, center * 0.9) * vOpacity;
+            float alpha = max(glow * 0.65, center * 0.9) * vOpacity * globalOpacity;
             if (alpha < 0.005) discard;
             gl_FragColor = vec4(vColor, alpha);
           }
@@ -356,6 +359,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0] }: Swea
 
       positionAttr.needsUpdate = true
       starsMaterial.uniforms.time.value = state.clock.elapsedTime
+      starsMaterial.uniforms.globalOpacity.value = transitionProgress
 
       if (cursorSpeed < 0.08) {
         stopAllChimes()

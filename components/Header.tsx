@@ -182,31 +182,11 @@ export default function Header({
 
             <div className="flex items-center   gap-4 overflow-hidden max-w-0 ml-0 opacity-0 -translate-x-2 pointer-events-none transition-all 
             duration-800 ease-out group-hover:max-w-[320px] group-hover:ml-4 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto">
-              {onWorkToggle ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isInSpace) {
-                      window.location.href = '/?underwater=1'
-                      return
-                    }
-                    onWorkToggle()
-                  }}
-                  className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
-                >
-                  works
-                </button>
-              ) : (
-                <Link href="/?underwater=1" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
-                  works
-                </Link>
-              )}
-
               <Link
                 href="/laboratory"
                 className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
               >
-                labs
+                works
               </Link>
 
               {onSpaceToggle ? (
@@ -266,32 +246,6 @@ export default function Header({
                   portfolio
                 </a>
               </li>
-              <li>
-                {onWorkToggle ? (
-                  <button
-                    type="button"
-                    className="text-white/80 hover:text-white transition-colors block text-lg text-left"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false)
-                      if (isInSpace) {
-                        window.location.href = '/?underwater=1'
-                        return
-                      }
-                      onWorkToggle()
-                    }}
-                  >
-                    works
-                  </button>
-                ) : (
-                  <Link 
-                    href="/?underwater=1" 
-                    className="text-white/80 hover:text-white transition-colors block text-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    works
-                  </Link>
-                )}
-              </li>
 
               <li>
                 <Link
@@ -299,7 +253,7 @@ export default function Header({
                   className="text-white/80 hover:text-white transition-colors block text-lg"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  labs
+                  works
                 </Link>
               </li>
               <li>

@@ -11,9 +11,11 @@ interface ModelProps {
   onCurveStarFound?: (position: THREE.Vector3) => void
   isUnderwater: boolean
   isInSpace: boolean
+  spaceTransitionProgress?: number
+  hdriSlotIndex?: number
 }
 
-export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace }: ModelProps) {
+export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace, spaceTransitionProgress = 0, hdriSlotIndex }: ModelProps) {
   const { scene } = useGLTF('/model.glb')
   const curveRef = useRef<THREE.Object3D | null>(null)
   const curveStarRef = useRef<THREE.Object3D | null>(null)
@@ -76,14 +78,30 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
         depthWrite: true,
       })
       } else {
-        curve.material = new THREE.MeshPhysicalMaterial({
-          color: 0xffffff,
-          emissive: new THREE.Color(0xffffff),
-          emissiveIntensity: 20.2,
-          toneMapped: false,
-          transparent: true,
-          opacity: 1,
-        })
+        // const isNight = hdriSlotIndex === undefined || hdriSlotIndex === 3
+        // if (isNight) {
+          // Night: white glowing emissive with bloom
+          curve.material = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            emissive: new THREE.Color(0xffffff),
+            emissiveIntensity: 20.2,
+            toneMapped: false,
+            transparent: true,
+            opacity: 1,
+          })
+      //   } else {
+      //     // Day: glass / translucent, no emissive
+      //     curve.material = new THREE.MeshPhysicalMaterial({
+      //       transmission: 1,
+      //       thickness: 1.5,
+      //       roughness: 0.0,
+      //       metalness: 0,
+      //       ior: 1.8,
+      //       clearcoat: 1,
+      //       clearcoatRoughness: 0,
+      //       transparent: true,
+      //     })
+      //   }
       }
     }
 
@@ -91,7 +109,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
     if (curveStar) {
       curveStar.visible = !isInSpace
     }
-  }, [isUnderwater, isInSpace])
+  }, [isUnderwater, isInSpace, hdriSlotIndex])
 
   const ellipseMaterial = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
@@ -156,7 +174,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
       {isInSpace && (
         <group ref={ellipseGroupRef} position={[0, 198, 0]} rotation={[0, 0, 0]}>
           <group scale={7} rotateOnAxis={new THREE.Vector3(0, 1, 0)}>
-            <SweatWithSpheres interactionCenter={[0, 200, 0]} />
+            <SweatWithSpheres interactionCenter={[0, 200, 0]} transitionProgress={spaceTransitionProgress} />
           </group>
         </group>
       )}

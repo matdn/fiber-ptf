@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { PROJECTS, type ProjectItem } from '@/lib/projectImages'
 
-const EXCLUDED_GRID_PROJECT_TITLES = new Set(['altitude101'])
+const EXCLUDED_GRID_PROJECT_TITLES = new Set([])
 
 function normalizeProjectTitle(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '')
@@ -54,9 +54,12 @@ export class ProjectsGrid extends THREE.Group {
   private onDistortionChange: (intensity: number) => void
   private distortionTween: gsap.core.Tween | null = null
   private snapTween: gsap.core.Tween | null = null
-  private lastWheelAtMs = 0
+  private snapTarget = new THREE.Vector2(0, 0)
+  private isLerpingToRest = false
+  private lastSnapTriggerAtMs = 0
   private snapPending = false
   private snapIdleMs = 90
+  private snapLerpFactor = 0.05
   private textureLoader = new THREE.TextureLoader()
   private textureCache: Map<string, THREE.Texture> = new Map()
   private textureCallbacks: Map<string, Array<(texture: THREE.Texture) => void>> = new Map()
@@ -199,7 +202,7 @@ export class ProjectsGrid extends THREE.Group {
 
   private loadTexture(url: string, onLoaded: (texture: THREE.Texture) => void) {
     const cached = this.textureCache.get(url)
-    if (cached && cached.image) {
+    if (cached?.image) {
       onLoaded(cached)
       return
     }
@@ -215,7 +218,9 @@ export class ProjectsGrid extends THREE.Group {
       this.textureCache.set(url, texture)
       const callbacks = this.textureCallbacks.get(url)
       this.textureCallbacks.delete(url)
-      callbacks?.forEach((cb) => cb(texture))
+      callbacks?.forEach((cb) => {
+        cb(texture)
+      })
     })
   }
 
@@ -272,7 +277,9 @@ export class ProjectsGrid extends THREE.Group {
 
   showInitialCards(delayMs: number = 0) {
     // Clear any previous scheduled intro pops
-    this.introTimeouts.forEach((t) => clearTimeout(t))
+    this.introTimeouts.forEach((t) => {
+      clearTimeout(t)
+    })
     this.introTimeouts = []
 
     const cardsArray = Array.from(this.cards.values())
@@ -319,6 +326,7 @@ export class ProjectsGrid extends THREE.Group {
 
   onPointerDown(clientX: number, clientY: number) {
     this.isDragging = true
+    this.isLerpingToRest = false
 
     if (this.snapTween) {
       this.snapTween.kill()
@@ -345,11 +353,15 @@ export class ProjectsGrid extends THREE.Group {
       
       // Réduire la distorsion
       this.setDistortionTarget(0, 1)
+
+      this.lastSnapTriggerAtMs = performance.now()
+      this.snapPending = this.snapBackOnIdle
     }
   }
 
   onWheel(deltaX: number, deltaY: number) {
     // Trackpads can scroll in both axes; map to the same drag feel.
+    this.isLerpingToRest = false
     if (this.snapTween) {
       this.snapTween.kill()
       this.snapTween = null
@@ -357,7 +369,7 @@ export class ProjectsGrid extends THREE.Group {
     this.drag(new THREE.Vector2(deltaX * 0.004, -deltaY * 0.004))
     this.pulseDistortion()
 
-    this.lastWheelAtMs = performance.now()
+    this.lastSnapTriggerAtMs = performance.now()
     this.snapPending = this.snapBackOnIdle
   }
 
@@ -394,20 +406,13 @@ export class ProjectsGrid extends THREE.Group {
     const targetX = -targetGridX * this.cardSpacing - cursorOffset.x
     const targetY = -targetGridY * this.cardSpacing - cursorOffset.y
 
-    // Smoothly ease to the centered card to avoid a visible jump.
+    // Start a light lerp toward the centered card to keep the snap soft.
     if (this.snapTween) {
       this.snapTween.kill()
       this.snapTween = null
     }
-    this.snapTween = gsap.to(this.positionOffset, {
-      x: targetX,
-      y: targetY,
-      duration: 0.35,
-      ease: 'power3.out',
-      onComplete: () => {
-        this.snapTween = null
-      },
-    })
+    this.snapTarget.set(targetX, targetY)
+    this.isLerpingToRest = true
   }
 
   private animateCameraZ(distance: number, duration: number) {
@@ -455,7 +460,7 @@ export class ProjectsGrid extends THREE.Group {
     if (
       this.snapPending &&
       !this.isDragging &&
-      performance.now() - this.lastWheelAtMs > this.snapIdleMs
+      performance.now() - this.lastSnapTriggerAtMs > this.snapIdleMs
     ) {
       this.snapPending = false
       this.velocity.set(0, 0)
@@ -464,13 +469,21 @@ export class ProjectsGrid extends THREE.Group {
       this.returnToRest()
     }
 
+    if (this.isLerpingToRest && !this.isDragging) {
+      this.positionOffset.lerp(this.snapTarget, this.snapLerpFactor)
+      if (this.positionOffset.distanceToSquared(this.snapTarget) < 0.0004) {
+        this.positionOffset.copy(this.snapTarget)
+        this.isLerpingToRest = false
+      }
+    }
+
     // Apply cursor ambient offset
     const cursorOffset = this.getAmbientCursorOffset(this.tmpVec2)
     
     // Update position based on drag or velocity
     if (this.dragAction.length() > 0.001) {
       this.positionOffset.add(this.dragAction)
-    } else {
+    } else if (!this.isLerpingToRest) {
       this.positionOffset.add(this.velocity)
     }
     
@@ -527,9 +540,12 @@ export class ProjectsGrid extends THREE.Group {
       this.snapTween.kill()
       this.snapTween = null
     }
+    this.isLerpingToRest = false
     this.snapPending = false
 
-    this.introTimeouts.forEach((t) => clearTimeout(t))
+    this.introTimeouts.forEach((t) => {
+      clearTimeout(t)
+    })
     this.introTimeouts = []
 
     this.cards.forEach((card) => {

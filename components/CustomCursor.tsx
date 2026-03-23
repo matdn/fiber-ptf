@@ -9,14 +9,26 @@ const PAD = 8
 const LERP = 0.12
 const LERP_SNAP = 0.1
 
+// Per slot: [line color, square border color, label color]
+const SLOT_COLORS: Record<number, [string, string, string]> = {
+  0: ['rgba(180,140,255,0.55)', 'rgba(180,140,255,0.7)', 'rgba(180,140,255,0.55)'],  // morning – violet
+  1: ['rgba(255,230,100,0.55)', 'rgba(255,230,100,0.7)', 'rgba(255,230,100,0.55)'], // middleday – yellow
+  2: ['rgba(255,150,170,0.55)', 'rgba(255,150,170,0.7)', 'rgba(255,150,170,0.55)'], // sunset – rose
+  3: ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.34)', 'rgba(255,255,255,0.35)'], // night – white
+}
+
 export function CustomCursor({
   enabled,
   environment: _environment,
-  onRequest: _onRequest
+  onRequest: _onRequest,
+  showDragOverlay = true,
+  hdriSlotIndex,
 }: {
   enabled: boolean
   environment?: Environment
   onRequest?: (request: 'to-underwater' | 'to-space' | 'to-surface') => void
+  showDragOverlay?: boolean
+  hdriSlotIndex?: number
 }) {
   const hLineRef = useRef<HTMLDivElement>(null)
   const vLineRef = useRef<HTMLDivElement>(null)
@@ -50,15 +62,16 @@ export function CustomCursor({
 
     const INTERACTIVE = 'a, button, input, textarea, select, label, [role="button"], [data-cursor-target]'
 
+    const getInteractiveUnderPointer = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y)
+      return el?.closest(INTERACTIVE) ?? null
+    }
+
     const onPointerMove = (e: PointerEvent) => {
-      const dx = e.clientX - mouse.current.x
-      const dy = e.clientY - mouse.current.y
-      // Release lock as soon as the user moves even slightly
-      if (Math.hypot(dx, dy) > 2) {
-        lockedEl.current = null
-      }
       mouse.current.x = e.clientX
       mouse.current.y = e.clientY
+      // Keep lock in sync with the real element under pointer for stable hover detection.
+      lockedEl.current = getInteractiveUnderPointer(e.clientX, e.clientY)
     }
 
     const onPointerOver = (e: PointerEvent) => {
@@ -66,20 +79,21 @@ export function CustomCursor({
       if (el) lockedEl.current = el
     }
 
-    const onPointerOut = (e: PointerEvent) => {
-      const el = (e.target as Element).closest(INTERACTIVE)
-      if (el && lockedEl.current === el) lockedEl.current = null
+    const onPointerOut = () => {
+      lockedEl.current = getInteractiveUnderPointer(mouse.current.x, mouse.current.y)
     }
 
-    const PIXEL_SIZE = 10
+    const PIXEL_SIZE = 5
     let offscreenCanvas: HTMLCanvasElement | null = null
 
     const onMouseDown = (e: MouseEvent) => {
+      if (!showDragOverlay) return
       isDraggingRef.current = true
       dragStartRef.current = { x: e.clientX, y: e.clientY }
       dragCurrentRef.current = { x: e.clientX, y: e.clientY }
     }
     const onMouseUp = () => {
+      if (!showDragOverlay) return
       isDraggingRef.current = false
     }
 
@@ -96,12 +110,15 @@ export function CustomCursor({
 
       const x = current.current.x
       const y = current.current.y
+      const isDragging = isDraggingRef.current
 
-      // Lines always follow cursor
-      if (hLineRef.current) hLineRef.current.style.transform = `translateY(${y}px)`
-      if (vLineRef.current) vLineRef.current.style.transform = `translateX(${x}px)`
+      // Lines follow cursor directly without smoothing during drag, smoothed normally otherwise
+      const lineX = isDragging ? mouse.current.x : x
+      const lineY = isDragging ? mouse.current.y : y
+      if (hLineRef.current) hLineRef.current.style.transform = `translateY(${lineY}px)`
+      if (vLineRef.current) vLineRef.current.style.transform = `translateX(${lineX}px)`
 
-      // Square: snap to element or follow cursor
+      // Square: snap to element or follow cursor - use same smoothed position as lines for consistent timing
       let targetX: number
       let targetY: number
       let targetW: number
@@ -120,13 +137,11 @@ export function CustomCursor({
         targetH = SQUARE
       }
 
-      const lerpFactor = lockedEl.current ? LERP_SNAP : LERP
+      const lerpFactor = lockedEl.current ? LERP_SNAP : 0.3
       sq.current.x += (targetX - sq.current.x) * lerpFactor
       sq.current.y += (targetY - sq.current.y) * lerpFactor
       sq.current.w += (targetW - sq.current.w) * lerpFactor
       sq.current.h += (targetH - sq.current.h) * lerpFactor
-
-      const isDragging = isDraggingRef.current
 
       if (squareRef.current) {
         squareRef.current.style.transform = `translate(${sq.current.x}px, ${sq.current.y}px)`
@@ -135,15 +150,11 @@ export function CustomCursor({
         squareRef.current.style.opacity = isDragging ? '0' : '1'
       }
 
-      // Drag rectangle
-      if (isDragging) {
-        dragCurrentRef.current.x += (mouse.current.x - dragCurrentRef.current.x) * LERP
-        dragCurrentRef.current.y += (mouse.current.y - dragCurrentRef.current.y) * LERP
-      }
+      // Drag rectangle - follows cursor directly without smoothing
       const sx = dragStartRef.current.x
       const sy = dragStartRef.current.y
-      const dcx = isDragging ? mouse.current.x : x
-      const dcy = isDragging ? mouse.current.y : y
+      const dcx = mouse.current.x
+      const dcy = mouse.current.y
       const rx = Math.min(sx, dcx)
       const ry = Math.min(sy, dcy)
       const rw = Math.abs(dcx - sx)
@@ -151,17 +162,17 @@ export function CustomCursor({
 
       if (dragStartLineHRef.current) {
         dragStartLineHRef.current.style.transform = `translateY(${sy}px)`
-        dragStartLineHRef.current.style.opacity = isDragging ? '1' : '0'
+        dragStartLineHRef.current.style.opacity = showDragOverlay && isDragging ? '1' : '0'
       }
       if (dragStartLineVRef.current) {
         dragStartLineVRef.current.style.transform = `translateX(${sx}px)`
-        dragStartLineVRef.current.style.opacity = isDragging ? '1' : '0'
+        dragStartLineVRef.current.style.opacity = showDragOverlay && isDragging ? '1' : '0'
       }
       if (dragRectRef.current) {
         dragRectRef.current.style.transform = `translate(${rx}px, ${ry}px)`
         dragRectRef.current.style.width = `${rw}px`
         dragRectRef.current.style.height = `${rh}px`
-        dragRectRef.current.style.opacity = isDragging ? '1' : '0'
+        dragRectRef.current.style.opacity = showDragOverlay && isDragging ? '1' : '0'
       }
 
       // Pixelation canvas — always full-viewport size, content drawn only in drag region
@@ -182,7 +193,7 @@ export function CustomCursor({
         const ctx = overlayCanvas.getContext('2d')
         if (ctx) {
           ctx.clearRect(0, 0, bvw, bvh)
-          if (isDragging && rw > 4 && rh > 4) {
+          if (showDragOverlay && isDragging && rw > 4 && rh > 4) {
             const srcCanvas = document.getElementById('r3f-main-canvas') as HTMLCanvasElement | null
             if (srcCanvas) {
               // getBoundingClientRect gives the actual CSS rect of the R3F canvas
@@ -210,27 +221,29 @@ export function CustomCursor({
             }
           }
         }
-        overlayCanvas.style.opacity = isDragging && rw > 4 && rh > 4 ? '1' : '0'
+        overlayCanvas.style.opacity = showDragOverlay && isDragging && rw > 4 && rh > 4 ? '1' : '0'
       }
 
-      // Coordinate labels
-      const xInt = Math.round(x)
-      const yInt = Math.round(y)
+      // Coordinate labels - also follow cursor directly during drag
+      const labelX = isDragging ? mouse.current.x : x
+      const labelY = isDragging ? mouse.current.y : y
+      const xInt = Math.round(labelX)
+      const yInt = Math.round(labelY)
 
       if (labelLeftRef.current) {
-        labelLeftRef.current.style.transform = `translateY(${y}px)`
+        labelLeftRef.current.style.transform = `translateY(${labelY}px)`
         labelLeftRef.current.textContent = `${xInt}`
       }
       if (labelRightRef.current) {
-        labelRightRef.current.style.transform = `translateY(${y}px)`
+        labelRightRef.current.style.transform = `translateY(${labelY}px)`
         labelRightRef.current.textContent = `${xInt}`
       }
       if (labelTopRef.current) {
-        labelTopRef.current.style.transform = `translateX(${x}px)`
+        labelTopRef.current.style.transform = `translateX(${labelX}px)`
         labelTopRef.current.textContent = `${yInt}`
       }
       if (labelBottomRef.current) {
-        labelBottomRef.current.style.transform = `translateX(${x}px)`
+        labelBottomRef.current.style.transform = `translateX(${labelX}px)`
         labelBottomRef.current.textContent = `${yInt}`
       }
 
@@ -248,9 +261,12 @@ export function CustomCursor({
       window.cancelAnimationFrame(raf)
       document.body.style.cursor = previousCursor
     }
-  }, [enabled])
+  }, [enabled, showDragOverlay])
 
   if (!enabled) return null
+
+  const slotIdx = hdriSlotIndex !== undefined ? hdriSlotIndex : 3
+  const [lineColor, squareColor, labelColor] = SLOT_COLORS[slotIdx] ?? SLOT_COLORS[3]
 
   return (
     <>
@@ -260,7 +276,7 @@ export function CustomCursor({
         className="fixed left-0 top-0 z-9999 pointer-events-none w-screen"
         style={{
           height: '0.5px',
-          backgroundColor: 'rgba(255, 255, 255, 0.14)',
+          backgroundColor: lineColor,
           mixBlendMode: 'difference',
           transform: 'translateY(-200px)',
         }}
@@ -271,7 +287,7 @@ export function CustomCursor({
         className="fixed left-0 top-0 z-9999 pointer-events-none h-screen"
         style={{
           width: '0.5px',
-          backgroundColor: 'rgba(255, 255, 255, 0.14)',
+          backgroundColor: lineColor,
           mixBlendMode: 'difference',
           transform: 'translateX(-200px)',
         }}
@@ -283,7 +299,7 @@ export function CustomCursor({
         style={{
           width: SQUARE,
           height: SQUARE,
-          border: '1px solid rgba(255, 255, 255, 0.34)',
+          border: `1px solid ${squareColor}`,
           mixBlendMode: 'difference',
           transform: 'translate(-200px, -200px)',
           transition: 'border-color 0.2s ease, opacity 0.2s ease',
@@ -297,7 +313,7 @@ export function CustomCursor({
         className="fixed left-0 top-0 z-9999 pointer-events-none w-screen"
         style={{
           height: '0.5px',
-          backgroundColor: 'rgba(255, 255, 255, 0.28)',
+          backgroundColor: lineColor,
           mixBlendMode: 'difference',
           transform: 'translateY(-200px)',
           opacity: 0,
@@ -310,7 +326,7 @@ export function CustomCursor({
         className="fixed left-0 top-0 z-9999 pointer-events-none h-screen"
         style={{
           width: '0.5px',
-          backgroundColor: 'rgba(255, 255, 255, 0.28)',
+          backgroundColor: lineColor,
           mixBlendMode: 'difference',
           transform: 'translateX(-200px)',
           opacity: 0,
@@ -351,7 +367,7 @@ export function CustomCursor({
           fontFamily: 'monospace',
           fontSize: '9px',
           fontWeight: 300,
-          color: 'rgba(255,255,255,0.35)',
+          color: labelColor,
           mixBlendMode: 'difference',
           transform: 'translateY(-200px)',
           padding: '0 6px',
@@ -368,7 +384,7 @@ export function CustomCursor({
           fontFamily: 'monospace',
           fontSize: '9px',
           fontWeight: 300,
-          color: 'rgba(255,255,255,0.35)',
+          color: labelColor,
           mixBlendMode: 'difference',
           transform: 'translateY(-200px)',
           padding: '0 6px',
@@ -385,7 +401,7 @@ export function CustomCursor({
           fontFamily: 'monospace',
           fontSize: '9px',
           fontWeight: 300,
-          color: 'rgba(255,255,255,0.35)',
+          color: labelColor,
           mixBlendMode: 'difference',
           transform: 'translateX(-200px)',
           writingMode: 'vertical-rl',
@@ -403,7 +419,7 @@ export function CustomCursor({
           fontFamily: 'monospace',
           fontSize: '9px',
           fontWeight: 300,
-          color: 'rgba(255,255,255,0.35)',
+          color: labelColor,
           mixBlendMode: 'difference',
           transform: 'translateX(-200px)',
           writingMode: 'vertical-rl',

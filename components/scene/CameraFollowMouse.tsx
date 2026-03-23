@@ -36,7 +36,6 @@ export function CameraFollowMouse({
   const dragStartY = useRef(0);
   const dragOffset = useRef(0);
   const dragTarget = useRef(0);
-  const didSnapSpaceLookAt = useRef(false);
 
   useEffect(() => {
     if (initialPosition && !isInSpace) {
@@ -55,14 +54,7 @@ export function CameraFollowMouse({
     // Detect entry into space and set initial camera target.
     if (isInSpace && !previousIsInSpace.current) {
       transitionStartTime.current = clock.elapsedTime;
-      didSnapSpaceLookAt.current = false;
-
-      if (curveStarPosition) {
-        lookAtTarget.current.copy(curveStarPosition);
-        didSnapSpaceLookAt.current = true;
-      } else if (curvePosition) {
-        lookAtTarget.current.copy(curvePosition);
-      }
+      // Don't snap lookAt here — useFrame lerps it smoothly during the flight.
 
       if (lockSpaceCamera) {
         camera.position.set(0, 200, 30);
@@ -78,12 +70,11 @@ export function CameraFollowMouse({
     previousIsInSpace.current = isInSpace;
   }, [
     camera,
+    clock,
     isInSpace,
     lockSpaceCamera,
     pointer.x,
     pointer.y,
-    curvePosition,
-    curveStarPosition,
   ]);
 
   useEffect(() => {
@@ -124,9 +115,18 @@ export function CameraFollowMouse({
   }, [isInSpace]);
 
   useFrame(() => {
-    // While a scene transition is running, GSAP owns the camera position.
-    // Skip all lerping so the two don't fight each other.
-    if (transitionState?.isTransitioning) return;
+    // During a scene transition GSAP owns camera.position.
+    // We still update lookAt so the camera tracks its target during the flight
+    // instead of freezing in the wrong orientation.
+    if (transitionState?.isTransitioning) {
+      const trackTarget =
+        isInSpace && curveStarPosition
+          ? curveStarPosition
+          : curvePosition ?? lookAtTarget.current;
+      lookAtTarget.current.lerp(trackTarget, 0.04);
+      camera.lookAt(lookAtTarget.current);
+      return;
+    }
 
     if (initialPosition && !isInSpace) {
       if (!lockSpaceCamera) {
@@ -177,28 +177,14 @@ export function CameraFollowMouse({
       }
     }
 
-    if (isInSpace && curveStarPosition && !didSnapSpaceLookAt.current) {
-      lookAtTarget.current.copy(curveStarPosition);
-      didSnapSpaceLookAt.current = true;
-      camera.lookAt(lookAtTarget.current);
-      return;
-    }
-
     // Progressive lerp toward look-at target for all modes.
     const targetPosition =
       isInSpace && curveStarPosition
         ? curveStarPosition
         : (curvePosition ?? lookAtTarget.current);
 
-    // Compute lerp factor — fast snap on space entry, then gradual interpolation.
-    let lerpFactor = 0.3;
-    if (isInSpace && curveStarPosition) {
-      const timeSinceTransition =
-        clock.elapsedTime - transitionStartTime.current;
-      lerpFactor = timeSinceTransition < 0.35 ? 1 : 0.06;
-    }
-
-    // Apply lerp toward target and update camera orientation.
+    // Consistent smooth lerp — no instant snaps.
+    const lerpFactor = isInSpace ? 0.05 : 0.3;
     lookAtTarget.current.lerp(targetPosition, lerpFactor);
 
     camera.lookAt(lookAtTarget.current);

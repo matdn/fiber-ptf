@@ -2,6 +2,7 @@
 
 import { Preload } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { HDRIEnvironment } from "./HDRIEnvironment";
 import { Bloom, EffectComposer, SMAA } from "@react-three/postprocessing";
 import { memo, Suspense, useCallback, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -43,6 +44,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onProjectCloseInitiated,
   closeRequestId,
   forceCloseRequestId,
+  hdriSlotIndex,
   focusProjectRequest,
   onCreated,
 }: {
@@ -67,6 +69,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   onProjectCloseInitiated?: () => void;
   closeRequestId?: number;
   forceCloseRequestId: number;
+  hdriSlotIndex?: number;
   focusProjectRequest?: { id: number; project: ProjectItem } | null;
   onCreated: (payload: { camera: THREE.Camera; scene: THREE.Scene }) => void;
 }) {
@@ -76,8 +79,11 @@ export const SceneCanvas = memo(function SceneCanvas({
   const cameraLookAtLockRef = useRef<THREE.Vector3 | null>(null);
   const underwaterCarouselSpinAngleRef = useRef(0);
   const setBloomIntensityRef = useRef<((value: number) => void) | null>(null);
-  const surfaceBloomTarget = 0.1;
-
+  const spaceTransitionStartTimeRef = useRef<number | null>(null);
+  const [spaceTransitionProgress, setSpaceTransitionProgress] = useState(0);
+  // Night (slot 3 or undefined) gets a subtle bloom; other times of day have none since the curve is translucent
+  // const surfaceBloomTarget = (hdriSlotIndex === undefined || hdriSlotIndex === 3) ? 0.1 : 0;
+  const surfaceBloomTarget = 0.08;
   function BloomFadeController() {
     useFrame((_, delta) => {
       const setBloomIntensity = setBloomIntensityRef.current;
@@ -107,6 +113,30 @@ export const SceneCanvas = memo(function SceneCanvas({
 
     return null;
   }
+
+  function SpaceTransitionProgressController() {
+    useFrame(({ clock }) => {
+      if (isInSpace && spaceTransitionStartTimeRef.current === null) {
+        spaceTransitionStartTimeRef.current = clock.elapsedTime;
+      }
+
+      if (!isInSpace) {
+        spaceTransitionStartTimeRef.current = null;
+        setSpaceTransitionProgress(0);
+        return;
+      }
+
+      if (spaceTransitionStartTimeRef.current !== null) {
+        const elapsed = clock.elapsedTime - spaceTransitionStartTimeRef.current;
+        // Smooth fade in over 2 seconds
+        const progress = Math.min(elapsed / 2, 1);
+        setSpaceTransitionProgress(progress);
+      }
+    });
+
+    return null;
+  }
+
   const handleCameraLookAtLockChange = useCallback(
     (target: THREE.Vector3 | null) => {
       cameraLookAtLockRef.current = target ? target.clone() : null;
@@ -188,7 +218,12 @@ export const SceneCanvas = memo(function SceneCanvas({
         }
       }}
     >
-      {isUnderwater ? <color attach="background" args={["#fff "]} /> : <color attach="background" args={["#000"]} />}
+      {/* Solid-colour fallbacks – HDRIEnvironment overrides the surface background when the .hdr file is present */}
+      {isUnderwater && <color attach="background" args={["#fff"]} />}
+      {!isUnderwater && <color attach="background" args={["#000"]} />}
+
+      {/* HDRI environment – surface only, degrades gracefully when files are missing */}
+      <HDRIEnvironment active={!isUnderwater && !isInSpace} forcedSlotIndex={hdriSlotIndex} />
       {isUnderwater && (
         <fog
           attach="fog"
@@ -229,12 +264,15 @@ export const SceneCanvas = memo(function SceneCanvas({
 
       <Suspense fallback={null}>
         <BloomFadeController />
+        <SpaceTransitionProgressController />
         <Model
           onCurveFound={onCurveFound}
           onCurveRefFound={onCurveRefFound}
           onCurveStarFound={onCurveStarFound}
           isUnderwater={isUnderwater}
           isInSpace={isInSpace}
+          spaceTransitionProgress={spaceTransitionProgress}
+          hdriSlotIndex={hdriSlotIndex}
         />
 
         {!isInSpace && !isUnderwater && curvePosition && (

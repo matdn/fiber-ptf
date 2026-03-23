@@ -9,8 +9,9 @@ import { Loader } from '@/components/Loader'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { CustomCursor } from '@/components/CustomCursor'
 import Header from '@/components/Header'
-import { FPSCounter } from '@/components/FPSCounter'
 import AudioControls from '@/components/AudioControls'
+import { TIME_SLOTS, getCurrentTimeSlot } from '@/lib/hdriSlots'
+import { DevPanel } from '@/components/DevPanel'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
@@ -66,13 +67,17 @@ function MobileSimpleLanding() {
         className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-5 text-center text-white"
         style={{ mixBlendMode: 'difference', fontFamily: 'Neopixel, sans-serif' }}
       >
-        <p className="max-w-[13ch] text-[12vw] font-medium uppercase leading-[0.9] tracking-[0.08em]">
-          MATIS CREATES DIGITAL EXPERIENCES
+        <p style={{ fontFamily: 'MabryPro, sans-serif', fontWeight: '300' }} className="max-w-[13ch] text-[16vw] font-medium uppercase leading-[0.9] tracking-[0.08em]">
+          MATIS DN 
         </p>
+        <p style={{ fontFamily: 'MabryPro, sans-serif', fontWeight: '300' }} className="max-w-[13ch] text-[12vw] font-medium uppercase leading-[0.9] tracking-[0.08em]">
+          PORTFOLIO
+        </p> 
         <p className="mt-6 max-w-[30ch] text-[3.4vw] lowercase  tracking-[0.12em] text-white/85">
           CREATIVE TECHNOLOGIST, FREELANCEUR, AND STUDENT BUILDING VISUAL, INTERACTIVE, AND IMMERSIVE WEB STORIES.
         </p>
-        <p className="mt-3 text-[3.1vw] font-bold uppercase  text-white/80 fixed bottom-8 left-1/2 transform -translate-x-1/2">
+        <p className="mt-3 text-[3.1vw] font-bold uppercase  text-white/80 fixed bottom-8 left-1/2 transform -translate-x-1/2" style={{ fontFamily: 'MabryPro, sans-serif', fontWeight: '300' }}
+>
           FOR THE FULL EXPERIENCE, OPEN ON LAPTOP
         </p>
       </section>
@@ -86,6 +91,10 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
   const [instantSpaceEntry, setInstantSpaceEntry] = useState(false)
   const [underwaterRequest, setUnderwaterRequest] = useState<{ toUnderwater: boolean; id: number } | null>(null)
+  const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(() => {
+    const auto = getCurrentTimeSlot()
+    return TIME_SLOTS.indexOf(auto)
+  })
   const [volumes, setVolumes] = useState<{ [key: string]: number }>({
     mainSceneBackSound: 0.3,
     mainScenePlusSound: 0.25,
@@ -152,6 +161,7 @@ export default function Home() {
       <CustomCursor
         enabled={isLoaded}
         environment={environment}
+        hdriSlotIndex={hdriSlotIndex}
         onRequest={(request) => {
           if (request === 'to-underwater') {
             // Animation gérée dans la Scene
@@ -188,10 +198,11 @@ export default function Home() {
           instantSpaceEntry={instantSpaceEntry}
           underwaterRequest={underwaterRequest}
           volumes={volumes}
+          hdriSlotIndex={hdriSlotIndex}
         />
       </div>
 
-      <FPSCounter />
+      <DevPanel hdriSlotIndex={hdriSlotIndex} onSlotChange={setHdriSlotIndex} />
     </main>
   )
 }

@@ -17,6 +17,7 @@ type RawProject = {
   imageUrl: string
   detailImageUrl?: string | null
   detailVideoUrl?: string | null
+  projectUrl?: string | null
   description: string
   tags?: string[]
   year?: string
@@ -33,6 +34,7 @@ export type ProjectItem = {
   imageUrl: string
   detailImageUrl?: string
   detailVideoUrl?: string
+  projectUrl?: string
   description: string
   detailBlocks: ProjectDetailBlock[]
   tags?: string[]
@@ -75,6 +77,7 @@ export const PROJECTS: ProjectItem[] = projects.map((project) => {
     imageUrl: project.imageUrl,
     detailImageUrl: project.detailImageUrl || undefined,
     detailVideoUrl: project.detailVideoUrl || undefined,
+    projectUrl: project.projectUrl || undefined,
     description: project.description,
     tags: project.tags,
     year: project.year,

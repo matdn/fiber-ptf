@@ -3,14 +3,25 @@
     "title": "Altitude 101",
     "year": "2024",
     "tags": ["Video Production", "3D", "Motion", "Next.js", "WebGL"],
+    "projectUrl": "https://tympanus.net/Tutorials/3DImageTubeR3F/",
     "imageUrl": "/imagesProject/img1.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_2.mp4",
     "detailBlocks": [
       {
         "type": "video",
-        "src": "/imagesProject/alt101/alt101_video_2.mp4",
-        "height": 280
+        "src": "/imagesProject/alt101/alt101_video_1 .mp4",
+        "height": 620
+      },
+      {
+        "type": "image",
+        "src": "/imagesProject/alt101/alt101_1 .png",
+        "height": 540
+      },
+      {
+        "type": "video",
+        "src": "/imagesProject/alt101/alt101_video_3.mp4",
+        "height": 500
       },
       {
         "type": "text",
@@ -29,7 +40,7 @@
           "Le loader introduit la direction artistique avec une animation progressive des couches visuelles. Il sert a masquer les temps de chargement video, precharger les medias critiques et poser immediatement l identite du projet.",
           "Le comportement responsive conserve la meme signature graphique, mais ajuste la hierarchie, la densite de contenu et le ratio des plans pour garder un impact constant sur tous les ecrans."
         ],
-         "videoSrc": "/imagesProject/alt101/alt101_video_3.mp4",
+         "videoSrc": "/imagesProject/alt101/alt101_video_2.mp4",
         "imageSrc": "/imagesProject/alt101/alt101_2.png"
         
       }
@@ -181,41 +192,26 @@
     ]
   },
   {
-    "title": "OBSIDIAN",
-    "year": "2024",
-    "tags": ["Brand Identity", "3D", "Luxury", "Motion", "Fashion"],
-    "imageUrl": "/imagesProject/img2.png",
-    "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
-    "detailVideoUrl": "/imagesProject/helmet/helmet_video_1.mp4",
-    "description": "Luxury ready-to-wear brand identity built on geological metaphor and absolute material precision.",
+    "title": "MATZO",
+    "year": "2025",
+    "tags": ["Interactive", "Web Design", "Animation", "User Experience"],
+    "imageUrl": "/imagesProject/img5.png",
+    "detailImageUrl": null,
+    "detailVideoUrl": "/imagesProject/matzo/matzo_video_1.mp4",
+    "description": "Interactive experience blending motion design with spatial thinking and immersive storytelling.",
     "detailBlocks": [
       {
         "type": "video",
-        "src": "/imagesProject/helmet/helmet_video_1.mp4",
+        "src": "/imagesProject/matzo/matzo_video_1.mp4",
         "height": 620
       },
       {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_3.png",
-        "height": 540
-      },
-      {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_2.png",
-        "height": 420
-      },
-      {
-        "type": "video",
-        "src": "/imagesProject/alt101/alt101_video_3.mp4",
-        "height": 420
+        "type": "text",
+        "content": "MATZO est une expérience interactive construite sur la récursion et la fractale. Chaque geste produit une prolongation infinie du motif, créant une sensation d'immersion progressive."
       },
       {
         "type": "text",
-        "content": "OBSIDIAN est une marque de prêt-à-porter de luxe développée autour d'une métaphore géologique. La matière première — l'obsidienne, un verre volcanique — dicte chaque choix : couleurs, surfaces, finitions. Noir absolu, reflets bleutés, cassure nette."
-      },
-      {
-        "type": "text",
-        "content": "L'identité visuelle est construite sur un système typographique propriétaire, gravé comme dans la roche. Les packagings sont en métal brossé. Les visuels campagne jouent sur la tension entre minéral et textile, entre l'inerte et le vivant."
+        "content": "Le projet explore la limite entre l'interface et l'art génératif, où chaque interaction crée une nouvelle boucle visuelle. La performance et la fluidité sont au cœur de l'expérience utilisateur."
       }
     ]
   }

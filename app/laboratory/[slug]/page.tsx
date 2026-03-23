@@ -1,9 +1,10 @@
 import ProjectPageClient from './project-page-client'
 
-export default function LaboratoryProjectPage({
+export default async function LaboratoryProjectPage({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }> | { slug: string }
 }) {
-  return <ProjectPageClient slug={params.slug} />
+  const resolvedParams = await Promise.resolve(params)
+  return <ProjectPageClient slug={resolvedParams.slug} />
 }
