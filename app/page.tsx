@@ -11,6 +11,7 @@ import { CustomCursor } from '@/components/CustomCursor'
 import Header from '@/components/Header'
 import AudioControls from '@/components/AudioControls'
 import { TIME_SLOTS, getCurrentTimeSlot } from '@/lib/hdriSlots'
+import { HDRIEnvironment } from '@/components/scene/HDRIEnvironment'
 import { DevPanel } from '@/components/DevPanel'
 
 const Scene = dynamic(() => import('@/components/Scene'), {
@@ -52,11 +53,12 @@ function MobileHeaderCurve() {
   return <primitive object={curve} />
 }
 
-function MobileSimpleLanding() {
+function MobileSimpleLanding({ hdriSlotIndex }: { hdriSlotIndex: number }) {
   return (
     <main className="relative h-screen w-full overflow-hidden bg-black">
       <div className="absolute inset-0 z-0">
-        <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
+        <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: false, antialias: true }}>
+          <HDRIEnvironment active={true} forcedSlotIndex={hdriSlotIndex} />
           <ambientLight intensity={80} />
           <pointLight position={[10, 10, 10]} intensity={1} />
           <MobileHeaderCurve />
@@ -136,7 +138,7 @@ export default function Home() {
   }
 
   if (isMobile) {
-    return <MobileSimpleLanding />
+    return <MobileSimpleLanding hdriSlotIndex={hdriSlotIndex} />
   }
 
   return (
