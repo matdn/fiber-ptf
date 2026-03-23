@@ -1,5 +1,5 @@
 // ─── Set to true to lock the whole site in night mode ───────────────────────
-export const FORCE_NIGHT_MODE = false
+export const FORCE_NIGHT_MODE = true
 
 export type TimeSlot = {
   name: string

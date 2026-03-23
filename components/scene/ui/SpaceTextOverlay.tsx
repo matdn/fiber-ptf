@@ -61,6 +61,9 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
   textMaskRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const [hoveredText, setHoveredText] = useState<OverlayText>(null);
+  // Displayed text lags behind hoveredText to allow exit animation
+  const [displayedHoveredText, setDisplayedHoveredText] = useState<OverlayText>(null);
+  const prevDisplayedRef = useRef<OverlayText>(null);
   // hit-detection refs (ghost layer h2)
   const lineRefs = useRef<(HTMLElement | null)[]>([]);
   // ghost wrapper divs — for opacity + y entrance
@@ -110,20 +113,46 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
     };
   }, [isInSpace]);
 
+  // Exit animation → then update displayed content
   useEffect(() => {
     if (!isInSpace) return;
 
-    const active = OVERLAY_LINES.find((l) => l.text === hoveredText);
-    if (!active) return;
+    const prev = prevDisplayedRef.current;
+
+    if (prev !== null && prev !== hoveredText) {
+      const nodes = descriptionLineRefs.current.filter(Boolean) as HTMLElement[];
+      if (nodes.length > 0) {
+        gsap.killTweensOf(nodes);
+        gsap.to(nodes, {
+          opacity: 0,
+          y: -10,
+          duration: 0.18,
+          ease: "power2.in",
+          stagger: 0.03,
+          onComplete: () => {
+            prevDisplayedRef.current = hoveredText;
+            setDisplayedHoveredText(hoveredText);
+          },
+        });
+        return;
+      }
+    }
+
+    prevDisplayedRef.current = hoveredText;
+    setDisplayedHoveredText(hoveredText);
+  }, [hoveredText, isInSpace]);
+
+  // Entrance animation when displayed content is set
+  useEffect(() => {
+    if (!isInSpace || !displayedHoveredText) return;
 
     const nodes = descriptionLineRefs.current.filter(Boolean) as HTMLElement[];
     if (nodes.length === 0) return;
 
-    const hoverDelay = 1;
     gsap.killTweensOf(nodes);
     gsap.set(nodes, { opacity: 0, y: 10 });
 
-    const delayed = gsap.delayedCall(hoverDelay, () => {
+    const delayed = gsap.delayedCall(0.15, () => {
       gsap.to(nodes, {
         opacity: 1,
         y: 0,
@@ -137,7 +166,7 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
       delayed.kill();
       gsap.killTweensOf(nodes);
     };
-  }, [hoveredText, isInSpace]);
+  }, [displayedHoveredText, isInSpace]);
 
   useEffect(() => {
     if (!isInSpace) return;
@@ -166,7 +195,7 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
   if (!isInSpace) return null;
 
   const activeDescription =
-    OVERLAY_LINES.find((l) => l.text === hoveredText)?.description ?? null;
+    OVERLAY_LINES.find((l) => l.text === displayedHoveredText)?.description ?? null;
 
   const activeDescriptionLines = activeDescription;
 
@@ -214,11 +243,41 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
       </div>
     ));
 
+  const maskStyle: React.CSSProperties = {
+    WebkitMaskImage:
+      "radial-gradient(circle var(--mask-size) at var(--mask-x) var(--mask-y), #ffffff 0%, transparent 70%)",
+    WebkitMaskRepeat: "no-repeat",
+    maskImage:
+      "radial-gradient(circle var(--mask-size) at var(--mask-x) var(--mask-y), #ffffff 0%, transparent 70%)",
+    maskRepeat: "no-repeat",
+  };
+
   return (
-    <>
+    <div
+      ref={textMaskRef}
+      className="fixed inset-0 pointer-events-none"
+    >
+      {/* Ghost lines — faint, no mask */}
       <div
-        className="fixed bottom-[65dvh] left-[6vw] w-[28rem] pointer-events-none mix-blend-difference z-50"
+        className="absolute inset-0 uppercase flex items-start flex-col justify-end gap-0 mix-blend-difference"
+        style={{ paddingLeft: "10dvh", paddingBottom: "10dvh" }}
+      >
+        {renderGhostLines()}
+      </div>
+
+      {/* Masked title text — revealed by cursor */}
+      <div
+        className="absolute inset-0 uppercase flex items-start flex-col justify-end gap-0 mix-blend-difference"
+        style={{ paddingLeft: "10dvh", paddingBottom: "10dvh", ...maskStyle }}
+      >
+        {renderOverlayLines()}
+      </div>
+
+      {/* Description text — visible via opacity transition, no cursor mask */}
+      <div
+        className="absolute left-[6vw] w-[28rem] mix-blend-difference"
         style={{
+          bottom: "65dvh",
           opacity: activeDescription ? 1 : 0,
           transform: activeDescription ? "translateY(20dvh)" : "translateY(5dvh)",
           transition: "opacity 0.35s ease, transform 0.35s ease",
@@ -231,7 +290,6 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
             letterSpacing: "0.01em",
             lineHeight: 1.55,
             color: "#ffffff",
-            opacity: 1,
             fontWeight: 300,
           }}
         >
@@ -249,28 +307,6 @@ export const SpaceTextOverlay = memo(function SpaceTextOverlay({
           ))}
         </div>
       </div>
-
-      <div className="fixed bottom-[10dvh] left-[10dvh] w-full h-dvh pointer-events-none mix-blend-difference">
-        <div
-          className="absolute inset-0 uppercase flex items-start flex-col justify-end gap-0 mix-blend-difference"
-        >
-          {renderGhostLines()}
-        </div>
-        <div
-          ref={textMaskRef}
-          className="absolute inset-0 uppercase flex items-start flex-col justify-end gap-0 mix-blend-difference"
-          style={{
-            WebkitMaskImage:
-              "radial-gradient(circle var(--mask-size) at var(--mask-x) var(--mask-y), #ffffff 0%, transparent 70%)",
-            WebkitMaskRepeat: "no-repeat",
-            maskImage:
-              "radial-gradient(circle var(--mask-size) at var(--mask-x) var(--mask-y), #ffffff 0%, transparent 70%)",
-            maskRepeat: "no-repeat",
-          }}
-        >
-          {renderOverlayLines()}
-        </div>
-      </div>
-    </>
+    </div>
   );
 });
