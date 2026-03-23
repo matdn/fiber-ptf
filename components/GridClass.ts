@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { PROJECTS, type ProjectItem } from '@/lib/projectImages'
 
-const EXCLUDED_GRID_PROJECT_TITLES = new Set([])
+const EXCLUDED_GRID_PROJECT_TITLES = new Set<string>([])
 
 function normalizeProjectTitle(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, '')
