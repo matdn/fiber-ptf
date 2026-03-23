@@ -1,3 +1,6 @@
+// ─── Set to true to lock the whole site in night mode ───────────────────────
+export const FORCE_NIGHT_MODE = false
+
 export type TimeSlot = {
   name: string
   hourStart: number
@@ -48,6 +51,7 @@ export const TIME_SLOTS: TimeSlot[] = [
 ]
 
 export function getCurrentTimeSlot(): TimeSlot {
+  if (FORCE_NIGHT_MODE) return TIME_SLOTS[3]
   const hour = new Date().getHours()
   return TIME_SLOTS.find((s) => hour >= s.hourStart && hour < s.hourEnd) ?? TIME_SLOTS[0]
 }

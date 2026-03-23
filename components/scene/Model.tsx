@@ -111,6 +111,8 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
     }
   }, [isUnderwater, isInSpace, hdriSlotIndex])
 
+  const isNight = hdriSlotIndex === undefined || hdriSlotIndex === 3
+
   const ellipseMaterial = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -159,7 +161,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
   return (
     <>
       <group>
-        <primitive object={scene} scale={1} />
+        {(!isInSpace ) && <primitive object={scene} scale={1} />}
         {curve && !isUnderwater && !isInSpace && (
           <pointLight
             position={[curve.position.x, curve.position.y, curve.position.z]}

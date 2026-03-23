@@ -222,8 +222,8 @@ export const SceneCanvas = memo(function SceneCanvas({
       {isUnderwater && <color attach="background" args={["#fff"]} />}
       {!isUnderwater && <color attach="background" args={["#000"]} />}
 
-      {/* HDRI environment – surface only, degrades gracefully when files are missing */}
-      <HDRIEnvironment active={!isUnderwater && !isInSpace} forcedSlotIndex={hdriSlotIndex} />
+      {/* HDRI environment – surface + space, degrades gracefully when files are missing */}
+      <HDRIEnvironment active={!isUnderwater} forcedSlotIndex={hdriSlotIndex} />
       {isUnderwater && (
         <fog
           attach="fog"
@@ -303,7 +303,7 @@ export const SceneCanvas = memo(function SceneCanvas({
         )}
         <OrbitingRocks
           centerPosition={curveStarPosition || fallbackOrbitCenter}
-          isVisible={isInSpace}
+          isVisible={isInSpace && (hdriSlotIndex === undefined || hdriSlotIndex === 3)}
         />
         {!isUnderwater && (
           <group rotation={[-Math.PI / 2, 0, 0]} position={[0, -20, 0]}>
