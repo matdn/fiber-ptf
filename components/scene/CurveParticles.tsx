@@ -20,7 +20,7 @@ export function CurveParticles({ curvePosition, isUnderwater }: CurveParticlesPr
     
     for (let i = 0; i < particleCount; i++) {
       // Position aléatoire autour de la courbe
-      const radius = Math.random() * 9 + 2
+      const radius = Math.random() * 9 + 20
       const theta = Math.random() * Math.PI * 2
       const phi = Math.random() * Math.PI
       
