@@ -33,7 +33,7 @@ export const TIME_SLOTS: TimeSlot[] = [
     hourEnd: 21,
     hdri: '/hdri/sunset.hdr',
     envIntensity: 0.9,
-    bgBlurriness: 0.9,
+    bgBlurriness: 0.5,
     bgIntensity: 1,
   },
   {

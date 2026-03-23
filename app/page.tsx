@@ -147,6 +147,7 @@ export default function Home() {
         <Header
           isUnderwater={isUnderwater}
           isInSpace={isInSpace}
+          hdriSlotIndex={hdriSlotIndex}
           onSpaceToggle={(value) => {
             setIsUnderwater(false)
             setIsInSpace(value)

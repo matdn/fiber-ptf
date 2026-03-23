@@ -55,12 +55,14 @@ export default function Header({
   isUnderwater = false,
   isInSpace = false,
   onSpaceToggle,
-  onWorkToggle
+  onWorkToggle,
+  hdriSlotIndex,
 }: {
   isUnderwater?: boolean
   isInSpace?: boolean
   onSpaceToggle?: (value: boolean) => void
   onWorkToggle?: () => void
+  hdriSlotIndex?: number
 }) {
   const [curveOpacity, setCurveOpacity] = useState(0)
   const [curveScale, setCurveScale] = useState(0)
@@ -164,11 +166,13 @@ export default function Header({
     }
   }, [])
 
+  const isNight = hdriSlotIndex === undefined || hdriSlotIndex === 3
+
   return (
     <>
-      <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: 'difference' }}>
+      <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: isNight ? 'difference' : 'normal' }}>
         {/* Desktop Menu */}
-        <nav className="group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl bg-white/5 rounded px-6 py-3 shadow-lg " style={{ fontFamily: 'Neopixel, sans-serif' }}>
+        <nav className={`group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl rounded px-6 py-3  ${isNight ? 'bg-white/5' : 'bg-black/5 border border-white/8'}`} style={{ fontFamily: 'Neopixel, sans-serif' }}>
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <a href="/">
