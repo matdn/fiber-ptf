@@ -25,7 +25,7 @@ function makeLogoImage(size: number, fillStyle: string): HTMLCanvasElement {
   if (!ctx) return oc;
   const s = w / SVG_W;
   ctx.scale(s, s);
-  ctx.fillStyle = fillStyle;
+  ctx.fillStyle = "#000000";
   for (const d of PATHS) ctx.fill(new Path2D(d));
   return oc;
 }
@@ -297,7 +297,7 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
       <canvas
         ref={canvasRef}
         className="absolute bottom-0 inset-0 w-full h-full"
-        style={{ display: "block", backgroundColor: "#000000" }}
+        style={{ display: "block", backgroundColor: "#ffffff" }}
       />
 
       {/* Content overlay */}
@@ -329,11 +329,11 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
             }}
           >
             <h2
-              className="font-light text-black text-center leading-none select-none"
+              className="font-light text-white text-center leading-none select-none"
               style={{
                 fontSize: "clamp(5rem, 15vw, 14rem)",
                 letterSpacing: "-0.04em",
-                color: "white", 
+                color: "black", 
               }}
             >
               PORTFOLIO

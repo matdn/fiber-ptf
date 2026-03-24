@@ -1,5 +1,5 @@
 // ─── Set to true to lock the whole site in night mode ───────────────────────
-export const FORCE_NIGHT_MODE = true
+export const FORCE_NIGHT_MODE = false
 
 export type TimeSlot = {
   name: string
@@ -26,7 +26,7 @@ export const TIME_SLOTS: TimeSlot[] = [
     hourStart: 10,
     hourEnd: 16,
     hdri: '/hdri/day.hdr',
-    envIntensity: 0.4,
+    envIntensity: 0.2,
     bgBlurriness: 0.5,
     bgIntensity: 0.5,
   },
@@ -34,10 +34,10 @@ export const TIME_SLOTS: TimeSlot[] = [
     name: 'sunset',
     hourStart: 16,
     hourEnd: 21,
-    hdri: '/hdri/sunset.hdr',
-    envIntensity: 0.9,
+    hdri: '/hdri/sunset2.hdr',
+    envIntensity: 0.01,
     bgBlurriness: 0.5,
-    bgIntensity: 1,
+    bgIntensity: 0.1,
   },
   {
     name: 'night',
@@ -45,7 +45,7 @@ export const TIME_SLOTS: TimeSlot[] = [
     hourEnd: 24,
     hdri: '/hdri/night.hdr',
     envIntensity: 0.6,
-    bgBlurriness: 0.15,
+    bgBlurriness: 0.2,
     bgIntensity: 1.7,
   },
 ]

@@ -3,7 +3,11 @@
 import Header from '@/components/Header'
 import { CustomCursor } from '@/components/CustomCursor'
 import Footer from '@/components/Footer'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { HDRIEnvironment } from '@/components/scene/HDRIEnvironment'
+import { DevPanel } from '@/components/DevPanel'
+import { TIME_SLOTS, getCurrentTimeSlot } from '@/lib/hdriSlots'
 
 const SVG_W = 2072
 const SVG_H = 1339
@@ -27,7 +31,7 @@ function makeLogoImage(size: number): HTMLCanvasElement {
   if (!ctx) return oc
   const s = w / SVG_W
   ctx.scale(s, s)
-  ctx.fillStyle = '#0a0a0a'
+  ctx.fillStyle = 'rgba(255,255,255,0.7)'
   for (const d of PATHS) ctx.fill(new Path2D(d))
   return oc
 }
@@ -191,7 +195,7 @@ export default function ContactPage() {
 
         Engine.update(engine, DT)
 
-        const { W: cW, H: cH } = getWH()
+        const { H: cH } = getWH()
         for (let i = logoBodies.length - 1; i >= 0; i--) {
           if (logoBodies[i].position.y > cH + 400) {
             World.remove(engine.world, logoBodies[i])
@@ -211,12 +215,6 @@ export default function ContactPage() {
           ctx.drawImage(logoImg, -LOGO_W / 2, -logoH / 2, LOGO_W, logoH)
           ctx.restore()
         }
-
-        const grad = ctx.createLinearGradient(0, 0, 0, cH * 0.5)
-        grad.addColorStop(0, 'rgba(255,255,255,1)')
-        grad.addColorStop(1, 'rgba(255,255,255,0)')
-        ctx.fillStyle = grad
-        ctx.fillRect(0, 0, cW, cH * 0.5)
 
         ctx.restore()
       }
@@ -238,9 +236,16 @@ export default function ContactPage() {
     return () => cleanup?.()
   }, [])
 
+  const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(() => TIME_SLOTS.indexOf(getCurrentTimeSlot()))
+
   return (
-    <main className="relative w-full h-screen bg-white overflow-hidden select-none">
+    <main className="relative w-full h-screen overflow-hidden select-none">
       <Header isUnderwater={false} />
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        <Canvas camera={{ position: [0, 0, 1], fov: 75 }} gl={{ antialias: false }}>
+          <HDRIEnvironment active={true} forcedSlotIndex={hdriSlotIndex} />
+        </Canvas>
+      </div>
       <canvas
         ref={canvasRef}
         style={{
@@ -250,10 +255,11 @@ export default function ContactPage() {
           height: '100%',
           display: 'block',
           cursor: 'none',
+          zIndex: 1,
         }}
       />
 
-      <div className="relative z-10 flex flex-col items-center justify-start pt-[24dvh] px-6 pointer-events-none mix-blend-difference">
+      <div className="relative z-10 flex flex-col items-center justify-start pt-[24dvh] px-6 ">
         <h1
           style={{
             fontFamily: 'Neopixel, sans-serif',
@@ -263,27 +269,48 @@ export default function ContactPage() {
             lineHeight: 1.0,
             color: '#ffffff',
             textAlign: 'center',
+            pointerEvents: 'none',
           }}
         >
           {"let's work"}
           <br />
           together!
         </h1>
-         <h2  
+        <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '2.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <a
+            href="mailto:matisdene44@gmail.com"
             style={{
-            fontFamily: 'Neopixel, sans-serif',
-            fontSize: 'clamp(1rem, 2vw, 2rem)',
-            fontWeight: 200,
-            letterSpacing: '-0.04em',
-            lineHeight: 1.0,
-            color: '#343434',
-            textAlign: 'center',
-            paddingTop: '2.5rem',
-            textDecoration: 'underline',
-          }}><a href="/">contact me here!</a></h2>
+              fontFamily: 'Neopixel, sans-serif',
+              fontSize: 'clamp(0.9rem, 1.8vw, 1.6rem)',
+              fontWeight: 200,
+              letterSpacing: '-0.04em',
+              color: '#eeeeee',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+            }}
+          >
+            contact me
+          </a>
+          <a
+            href="/cv.pdf"
+            download
+            style={{
+              fontFamily: 'Neopixel, sans-serif',
+              fontSize: 'clamp(0.9rem, 1.8vw, 1.6rem)',
+              fontWeight: 200,
+              letterSpacing: '-0.04em',
+              color: '#eeeeee',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+            }}
+          >
+            download my CV
+          </a>
+        </div>
       </div>
       <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />
       <Footer dark />
+      <DevPanel hdriSlotIndex={hdriSlotIndex} onSlotChange={setHdriSlotIndex} />
      
     </main>
   )

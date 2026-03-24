@@ -16,7 +16,7 @@ const LINKS = [
 ]
 
 export default function Footer({ dark = false }: { dark?: boolean }) {
-  const baseClass = dark ? 'text-black/30 hover:text-black/80' : 'text-white/30 hover:text-white/80'
+  const baseClass = dark ? 'text-white/30 hover:text-white/80' : 'text-white/30 hover:text-white/80'
   const sepStyle = { color: dark ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)' }
   return (
     <footer

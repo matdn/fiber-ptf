@@ -6,8 +6,8 @@ type Environment = 'surface' | 'underwater' | 'space'
 
 const SQUARE = 14
 const PAD = 8
-const LERP = 0.12
-const LERP_SNAP = 0.1
+const LERP = 0.28
+const LERP_SNAP = 0.18
 
 // Per slot: [line color, square border color, label color]
 const SLOT_COLORS: Record<number, [string, string, string]> = {
@@ -83,7 +83,7 @@ export function CustomCursor({
       lockedEl.current = getInteractiveUnderPointer(mouse.current.x, mouse.current.y)
     }
 
-    const PIXEL_SIZE = 5
+    const PIXEL_SIZE = 40
     let offscreenCanvas: HTMLCanvasElement | null = null
 
     const onMouseDown = (e: MouseEvent) => {

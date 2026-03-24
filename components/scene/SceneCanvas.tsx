@@ -275,9 +275,9 @@ export const SceneCanvas = memo(function SceneCanvas({
           hdriSlotIndex={hdriSlotIndex}
         />
 
-        {!isInSpace && !isUnderwater && curvePosition && (
+        {/* {!isInSpace && !isUnderwater && curvePosition && (
           <CurveParticles curvePosition={curvePosition} isUnderwater={false} />
-        )}
+        )} */}
         {isUnderwater && (
           <>
             <UnderwaterProjectsCarousel

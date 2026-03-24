@@ -10,8 +10,21 @@ import Header from '@/components/Header'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { DraggableSphere } from '@/components/DraggableSphere'
 import { CustomCursor } from '@/components/CustomCursor'
+import { HDRIEnvironment } from '@/components/scene/HDRIEnvironment'
+import { DevPanel } from '@/components/DevPanel'
 import { getProjectSlug, type ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
+
+const BG_COLOR = '#ffffff'
+
+function SetClearColor() {
+  const { gl } = useThree()
+  useEffect(() => {
+    gl.setClearColor(BG_COLOR, 0.9)
+    
+  }, [gl])
+  return null
+}
 
 function Postprocessing({ distortionIntensity }: { distortionIntensity: number }) {
   const { gl, scene, camera } = useThree()
@@ -300,7 +313,7 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
   return <primitive object={grid} />
 }
 
-function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelocity, onDragVelocity, onProjectClick, onIdleProjectChange }: {
+function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelocity, onDragVelocity, onProjectClick, onIdleProjectChange, hdriSlotIndex }: {
   distortionIntensity: number
   onDistortionChange: (intensity: number) => void
   isUnderwater: boolean
@@ -308,11 +321,13 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
   onDragVelocity: (velocity: { x: number; y: number }) => void
   onProjectClick: (project: ProjectItem | null) => void
   onIdleProjectChange: (project: ProjectItem | null) => void
+  hdriSlotIndex: number
 }) {
   return (
     <>
-      <color attach="background" args={['#000000']} />
-      <ambientLight intensity={0.3} />
+      <HDRIEnvironment active={true} forcedSlotIndex={hdriSlotIndex} showBackground={false} />
+      <SetClearColor />
+      <ambientLight intensity={100.3} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
       <Grid
         onDistortionChange={onDistortionChange}
@@ -320,7 +335,7 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
         onProjectClick={onProjectClick}
         onIdleProjectChange={onIdleProjectChange}
       />
-      <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
+      {/* <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} /> */}
       <Postprocessing distortionIntensity={distortionIntensity} />
     </>
   )
@@ -332,6 +347,7 @@ export default function LaboratoryPage() {
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
   const { isUnderwater } = useUnderwater()
+  const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(1) // default: middleday (light)
 
   return (
     <>
@@ -341,6 +357,7 @@ export default function LaboratoryPage() {
         <Canvas
           camera={{ position: [0, 0, 12], fov: 60 }}
           gl={{ antialias: true }}
+          style={{ background: BG_COLOR }}
         >
           <Scene 
             distortionIntensity={distortionIntensity}
@@ -350,6 +367,7 @@ export default function LaboratoryPage() {
             onDragVelocity={setDragVelocity}
             onProjectClick={setSelectedProject}
             onIdleProjectChange={setSelectedProject}
+            hdriSlotIndex={hdriSlotIndex}
           />
         </Canvas>
         <div
@@ -357,9 +375,10 @@ export default function LaboratoryPage() {
           style={{
             zIndex: 20,
             background:
-              'radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 24%, rgba(0, 0, 0, 0.35) 46%, rgba(0, 0, 0, 0.72) 66%, rgba(0, 0, 0, 0.95) 84%, rgba(0, 0, 0, 1) 100%)',
+              'radial-gradient(ellipse at center, rgba(255,255,255,0) 30%, rgba(255,255,255,0.25) 52%, rgba(255,255,255,0.6) 70%, rgba(255,255,255,0.88) 85%, rgba(255,255,255,1) 100%)',
           }}
         />
+        <DevPanel hdriSlotIndex={hdriSlotIndex} onSlotChange={setHdriSlotIndex} />
         <LaboratoryProjectPreviewOverlay
           project={selectedProject}
           onOpen={() => {

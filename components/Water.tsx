@@ -91,7 +91,7 @@ export function Water() {
         time: { value: 0 },
         waveStrength: { value: 1 },
         waveSpeed: { value: 0.005 },
-        transmission: { value: 0 },
+        transmission: { value: 1 },
         dudvScale: { value: 0.01 },
         opacity: { value: 1.0 },
         ripplePositions: { value: new Array(20).fill(0).map(() => new THREE.Vector2(0, 0)) },

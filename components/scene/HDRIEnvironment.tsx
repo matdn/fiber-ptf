@@ -27,11 +27,11 @@ class HDRIErrorBoundary extends Component<
 
 // ─── Inner loader (inside Suspense) ─────────────────────────────────────────
 
-function HDRILoader({ slot }: { slot: TimeSlot }) {
+function HDRILoader({ slot, showBackground }: { slot: TimeSlot; showBackground: boolean }) {
   return (
     <Environment
       files={slot.hdri}
-      background
+      background={showBackground}
       backgroundBlurriness={slot.bgBlurriness}
       backgroundIntensity={slot.bgIntensity}
       environmentIntensity={slot.envIntensity}
@@ -49,7 +49,7 @@ function HDRILoader({ slot }: { slot: TimeSlot }) {
  *
  * Place the matching .hdr files in /public/hdri/ – see /public/hdri/README.md.
  */
-export function HDRIEnvironment({ active, forcedSlotIndex }: { active: boolean; forcedSlotIndex?: number }) {
+export function HDRIEnvironment({ active, forcedSlotIndex, showBackground = true }: { active: boolean; forcedSlotIndex?: number; showBackground?: boolean }) {
   const autoSlot = useMemo(() => getCurrentTimeSlot(), []);
   const slot = forcedSlotIndex !== undefined
     ? (TIME_SLOTS[forcedSlotIndex] ?? autoSlot)
@@ -60,7 +60,7 @@ export function HDRIEnvironment({ active, forcedSlotIndex }: { active: boolean; 
   return (
     <HDRIErrorBoundary>
       <Suspense fallback={null}>
-        <HDRILoader slot={slot} />
+        <HDRILoader slot={slot} showBackground={showBackground} />
       </Suspense>
     </HDRIErrorBoundary>
   );
