@@ -7,11 +7,12 @@ import * as THREE from 'three'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Link from 'next/link'
+import { TIME_SLOTS } from '@/lib/hdriSlots'
 
 gsap.registerPlugin(ScrollTrigger)
 
 function MiniCurve({ opacity, scale: animScale, rotationY }: { opacity: number; scale: number; rotationY: number }) {
-  const { scene } = useGLTF('/m.glb')
+  const { scene } = useGLTF('/3D/m.glb')
   const { camera } = useThree()
   const curveClone = useRef<THREE.Object3D | null>(null)
 
@@ -166,7 +167,7 @@ export default function Header({
     }
   }, [])
 
-  const isNight = hdriSlotIndex === undefined || hdriSlotIndex === 3
+  const isNight = hdriSlotIndex === undefined || TIME_SLOTS[hdriSlotIndex]?.name === 'night'
 
   return (
     <>

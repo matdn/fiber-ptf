@@ -84,7 +84,7 @@ export class ProjectsGrid extends THREE.Group {
     const mat = new LineMaterial({
       color: 0x1a1a1a,
       transparent: true,
-      opacity: 0.1,
+      opacity: 1,
       linewidth: 1.5,
       resolution: new THREE.Vector2(typeof window !== 'undefined' ? window.innerWidth : 1920, typeof window !== 'undefined' ? window.innerHeight : 1080),
     })

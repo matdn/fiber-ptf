@@ -99,25 +99,10 @@
     "description": "Plateforme créative pour studio digital: vitrine projets, pipeline média, et direction artistique interactive."
   },
   {
-    "title": "Orbit Labs",
-    "year": "2025",
-    "tags": ["Shaders", "GLSL", "Performance", "React Three Fiber"],
-    "imageUrl": "/imagesProject/img5.png",
-    "detailImageUrl": null,
-    "detailVideoUrl": null,
-    "detailBlocks": [
-      {
-        "type": "text",
-        "content": "Landing expérimentale avec shader FX, micro-interactions et architecture front pensée pour le scale."
-      }
-    ],
-    "description": "Landing expérimentale avec shader FX, micro-interactions et architecture front pensée pour le scale."
-  },
-  {
-    "title": "NOIR",
+    "title": "LABNOIR ",
     "year": "2025",
     "tags": ["Editorial", "Fashion", "Dark", "Motion", "3D"],
-    "imageUrl": "/imagesProject/img3.png",
+    "imageUrl": "/imagesProject/cm/cm.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_2.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_1 .mp4",
     "description": "Editorial campaign redefining silence through texture, shadow, and obsessive restraint.",
@@ -152,50 +137,12 @@
       }
     ]
   },
-  {
-    "title": "SHADOW SYSTEM",
-    "year": "2025",
-    "tags": ["Brutalist", "Typography", "WebGL", "Fashion", "Identity"],
-    "imageUrl": "/imagesProject/img4.png",
-    "detailImageUrl": "/imagesProject/alt101/alt101_4.png",
-    "detailVideoUrl": "/imagesProject/dithering/dithering_video_1.mp4",
-    "description": "A brutalist identity system where type overwhelms image and contrast becomes the only rule.",
-    "detailBlocks": [
-      {
-        "type": "video",
-        "src": "/imagesProject/dithering/dithering_video_1.mp4",
-        "height": 620
-      },
-      {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_4.png",
-        "height": 540
-      },
-      {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_1 .png",
-        "height": 420
-      },
-      {
-        "type": "video",
-        "src": "/imagesProject/alt101/alt101_video_2.mp4",
-        "height": 420
-      },
-      {
-        "type": "text",
-        "content": "SHADOW SYSTEM naît d'un désaccord entre la typographie et l'image. La hiérarchie visuelle est délibérément brisée — les mots écrasent les visages, les blocs de texte débordent des marges, les colonnes refusent l'alignement."
-      },
-      {
-        "type": "text",
-        "content": "Le système d'identité est généré par algorithme : chaque affiche, chaque page, chaque écran produit une grille légèrement différente tout en restant dans la même logique brutale. Pas de douceur, pas de padding confortable."
-      }
-    ]
-  },
+  
   {
     "title": "MATZO",
     "year": "2025",
     "tags": ["Interactive", "Web Design", "Animation", "User Experience"],
-    "imageUrl": "/imagesProject/img5.png",
+    "imageUrl": "/imagesProject/matzo/matzo_img_1.png",
     "detailImageUrl": null,
     "detailVideoUrl": "/imagesProject/matzo/matzo_video_1.mp4",
     "description": "Interactive experience blending motion design with spatial thinking and immersive storytelling.",

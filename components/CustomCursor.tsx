@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { TIME_SLOTS } from '@/lib/hdriSlots'
 
 type Environment = 'surface' | 'underwater' | 'space'
 
@@ -9,12 +10,12 @@ const PAD = 8
 const LERP = 0.28
 const LERP_SNAP = 0.18
 
-// Per slot: [line color, square border color, label color]
-const SLOT_COLORS: Record<number, [string, string, string]> = {
-  0: ['rgba(180,140,255,0.55)', 'rgba(180,140,255,0.7)', 'rgba(180,140,255,0.55)'],  // morning – violet
-  1: ['rgba(255,230,100,0.55)', 'rgba(255,230,100,0.7)', 'rgba(255,230,100,0.55)'], // middleday – yellow
-  2: ['rgba(255,150,170,0.55)', 'rgba(255,150,170,0.7)', 'rgba(255,150,170,0.55)'], // sunset – rose
-  3: ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.34)', 'rgba(255,255,255,0.35)'], // night – white
+// Per slot name: [line color, square border color, label color]
+const SLOT_COLORS: Record<string, [string, string, string]> = {
+  morning:   ['rgba(180,140,255,0.55)', 'rgba(180,140,255,0.7)', 'rgba(180,140,255,0.55)'],
+  middleday: ['rgba(255,230,100,0.55)', 'rgba(255,230,100,0.7)', 'rgba(255,230,100,0.55)'],
+  sunset:    ['rgba(255,150,170,0.55)', 'rgba(255,150,170,0.7)', 'rgba(255,150,170,0.55)'],
+  night:     ['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.34)', 'rgba(255,255,255,0.35)'],
 }
 
 export function CustomCursor({
@@ -83,7 +84,7 @@ export function CustomCursor({
       lockedEl.current = getInteractiveUnderPointer(mouse.current.x, mouse.current.y)
     }
 
-    const PIXEL_SIZE = 40
+    const PIXEL_SIZE = 30
     let offscreenCanvas: HTMLCanvasElement | null = null
 
     const onMouseDown = (e: MouseEvent) => {
@@ -265,8 +266,8 @@ export function CustomCursor({
 
   if (!enabled) return null
 
-  const slotIdx = hdriSlotIndex !== undefined ? hdriSlotIndex : 3
-  const [lineColor, squareColor, labelColor] = SLOT_COLORS[slotIdx] ?? SLOT_COLORS[3]
+  const slotName = hdriSlotIndex !== undefined ? (TIME_SLOTS[hdriSlotIndex]?.name ?? 'night') : 'night'
+  const [lineColor, squareColor, labelColor] = SLOT_COLORS[slotName] ?? SLOT_COLORS['night']
 
   return (
     <>

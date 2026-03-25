@@ -335,7 +335,7 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
         onProjectClick={onProjectClick}
         onIdleProjectChange={onIdleProjectChange}
       />
-      {/* <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} /> */}
+      <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
       <Postprocessing distortionIntensity={distortionIntensity} />
     </>
   )

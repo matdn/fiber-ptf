@@ -11,7 +11,7 @@ interface OrbitingRocksProps {
 }
 
 export function OrbitingRocks({ centerPosition, isVisible }: OrbitingRocksProps) {
-  const { scene } = useGLTF('/rocks.glb')
+  const { scene } = useGLTF('3D/rocks.glb')
   const rocksGroupRef = useRef<THREE.Group>(null)
   
   const rockMeshes = useMemo(() => {
@@ -92,4 +92,4 @@ export function OrbitingRocks({ centerPosition, isVisible }: OrbitingRocksProps)
   )
 }
 
-useGLTF.preload('/rocks.glb')
+useGLTF.preload('3D/rocks.glb')

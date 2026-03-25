@@ -97,7 +97,7 @@ export function FloatingMModels({
   pointerRef?: PointerRef;
   color?: THREE.ColorRepresentation;
 }) {
-  const gltf = useGLTF("/m.glb");
+  const gltf = useGLTF("/3D/m.glb");
   const groupRef = useRef<THREE.Group>(null);
   const itemRefs = useRef<Array<THREE.Group | null>>([]);
 
@@ -387,4 +387,4 @@ export function FloatingMModels({
   );
 }
 
-useGLTF.preload("/m.glb");
+useGLTF.preload("/3D/m.glb");

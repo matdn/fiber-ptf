@@ -12,7 +12,7 @@ type SweatWithSpheresProps = {
 }
 
 export default function SweatWithSpheres({ interactionCenter = [0, 0, 0], transitionProgress = 1 }: SweatWithSpheresProps) {
-  const { scene } = useGLTF('/sweat.glb')
+  const { scene } = useGLTF('3D/sweat.glb')
   const groupRef = useRef<THREE.Group>(null)
   const pointsRef = useRef<THREE.Points>(null)
   const modelRef = useRef<THREE.Object3D>(null)

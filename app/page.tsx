@@ -19,7 +19,7 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 })
 
 function MobileHeaderCurve() {
-  const { scene } = useGLTF('/m.glb')
+  const { scene } = useGLTF('/3D/m.glb')
   const [curve, setCurve] = useState<THREE.Object3D | null>(null)
 
   useEffect(() => {
@@ -210,4 +210,4 @@ export default function Home() {
   )
 }
 
-useGLTF.preload('/m.glb')
+useGLTF.preload('/3D/m.glb')

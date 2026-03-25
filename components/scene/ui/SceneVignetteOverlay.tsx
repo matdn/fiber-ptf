@@ -1,13 +1,14 @@
 "use client";
 
 import { memo } from "react";
+import { TIME_SLOTS } from "@/lib/hdriSlots";
 
-// Colors keyed by slot index: 0=morning, 1=middleday, 2=sunset, 3=night
-const VIGNETTE_COLORS: Record<number, [string, number]> = {
-  0: ["218, 251, 255", 0.1],  // morning  → violet pastel, très léger
-  1: ["255, 240, 180", 0.1],  // middleday → jaune doux, quasi invisible
-  2: ["255, 160, 180", 0.1],  // sunset   → rose pêche léger
-  3: ["0, 0, 0",       1.0],  // night    → noir plein
+// Colors keyed by slot name
+const VIGNETTE_COLORS: Record<string, [string, number]> = {
+  morning:   ["218, 251, 255", 0.1],
+  middleday: ["255, 240, 180", 0.1],
+  sunset:    ["255, 160, 180", 0.1],
+  night:     ["0, 0, 0",       1.0],
 };
 
 function buildVignette(rgb: string, strength: number) {
@@ -22,9 +23,8 @@ export const SceneVignetteOverlay = memo(function SceneVignetteOverlay({
   isUnderwater: boolean;
   hdriSlotIndex?: number;
 }) {
-  const [rgb, strength] = hdriSlotIndex !== undefined
-    ? (VIGNETTE_COLORS[hdriSlotIndex] ?? VIGNETTE_COLORS[3])
-    : VIGNETTE_COLORS[3];
+  const slotName = hdriSlotIndex !== undefined ? (TIME_SLOTS[hdriSlotIndex]?.name ?? 'night') : 'night'
+  const [rgb, strength] = VIGNETTE_COLORS[slotName] ?? VIGNETTE_COLORS['night'];
 
   return (
     <div

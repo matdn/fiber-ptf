@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { TIME_SLOTS } from '@/lib/hdriSlots'
 import SweatWithSpheres from '../SweatWithSpheres'
 
 interface ModelProps {
@@ -16,7 +17,7 @@ interface ModelProps {
 }
 
 export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace, spaceTransitionProgress = 0, hdriSlotIndex }: ModelProps) {
-  const { scene } = useGLTF('/model.glb')
+  const { scene } = useGLTF('3D/model.glb')
   const curveRef = useRef<THREE.Object3D | null>(null)
   const curveStarRef = useRef<THREE.Object3D | null>(null)
   const ellipseGroupRef = useRef<THREE.Group>(null)
@@ -111,7 +112,7 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
     }
   }, [isUnderwater, isInSpace, hdriSlotIndex])
 
-  const isNight = hdriSlotIndex === undefined || hdriSlotIndex === 3
+  const isNight = hdriSlotIndex === undefined || TIME_SLOTS[hdriSlotIndex]?.name === 'night'
 
   const ellipseMaterial = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
