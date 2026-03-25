@@ -10,19 +10,16 @@ import Header from '@/components/Header'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { DraggableSphere } from '@/components/DraggableSphere'
 import { CustomCursor } from '@/components/CustomCursor'
-import { HDRIEnvironment } from '@/components/scene/HDRIEnvironment'
+import { HDRIEnvironment, TIME_SLOTS, getCurrentTimeSlot } from '@/components/scene/HDRIEnvironment'
 import { DevPanel } from '@/components/DevPanel'
 import { getProjectSlug, type ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
 
-const BG_COLOR = '#ffffff'
-
-function SetClearColor() {
+function SetClearColor({ color }: { color: string }) {
   const { gl } = useThree()
   useEffect(() => {
-    gl.setClearColor(BG_COLOR, 0.9)
-    
-  }, [gl])
+    gl.setClearColor(color, 0.9)
+  }, [gl, color])
   return null
 }
 
@@ -88,14 +85,13 @@ function LaboratoryProjectPreviewOverlay({
             display: 'flex',
             alignItems: 'center',
             gap: '0.8rem',
-            padding: '0.4rem',
+            padding: '0.4rem 1rem 0.4rem 0.4rem',
             textAlign: 'left',
             width: '100%',
             borderRadius: '0.5rem',
             border: '1px solid rgba(200,200,200, 0.65)',
             background: 'rgba(255, 255, 255, 0.5)',
             boxShadow: '0 8px 20px rgba(16, 22, 48, 0.14)',
-            minWidth: '240px',
             backdropFilter: 'blur(4px)',
             cursor: 'pointer',
           }}
@@ -122,11 +118,12 @@ function LaboratoryProjectPreviewOverlay({
               letterSpacing: '0.01em',
               textTransform: 'uppercase',
               flexGrow: 1,
+              width: "fit-content",
             }}
           >
             {project.title}
           </span>
-          <span
+          {/* <span
             style={{
               fontFamily: 'Neopixel, sans-serif',
               color: '#ffffff',
@@ -138,16 +135,17 @@ function LaboratoryProjectPreviewOverlay({
             }}
           >
             Ouvrir
-          </span>
+          </span> */}
         </button>
       )}
     </div>
   )
 }
 
-function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjectChange }: {
+function Grid({ onDistortionChange, onDragVelocity, onScrollVelocity, onProjectClick, onIdleProjectChange }: {
   onDistortionChange: (intensity: number) => void
   onDragVelocity: (velocity: { x: number; y: number }) => void
+  onScrollVelocity: (velocity: { x: number; y: number }) => void
   onProjectClick: (project: ProjectItem | null) => void
   onIdleProjectChange: (project: ProjectItem | null) => void
 }) {
@@ -159,6 +157,7 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
   const pointerDownPos = useRef<{ x: number; y: number } | null>(null)
   const lastInteractionAt = useRef(0)
   const interactionActive = useRef(false)
+  const scrollResetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   
   const grid = useMemo(() => {
     return new ProjectsGrid(camera, onDistortionChange, {
@@ -274,6 +273,9 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
       lastInteractionAt.current = performance.now()
       onIdleProjectChange(null)
       grid.onWheel(e.deltaX, e.deltaY)
+      onScrollVelocity({ x: e.deltaX, y: e.deltaY })
+      if (scrollResetRef.current) clearTimeout(scrollResetRef.current)
+      scrollResetRef.current = setTimeout(() => onScrollVelocity({ x: 0, y: 0 }), 150)
     }
 
     canvas.addEventListener('pointermove', handlePointerMove)
@@ -292,7 +294,7 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
       canvas.removeEventListener('wheel', handleWheel)
       grid.dispose()
     }
-  }, [grid, gl, onDragVelocity, onProjectClick, onIdleProjectChange])
+  }, [grid, gl, onDragVelocity, onScrollVelocity, onProjectClick, onIdleProjectChange])
 
   // Mettre à jour la grille chaque frame
   useFrame(() => {
@@ -313,29 +315,33 @@ function Grid({ onDistortionChange, onDragVelocity, onProjectClick, onIdleProjec
   return <primitive object={grid} />
 }
 
-function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelocity, onDragVelocity, onProjectClick, onIdleProjectChange, hdriSlotIndex }: {
+function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelocity, onDragVelocity, scrollVelocity, onScrollVelocity, onProjectClick, onIdleProjectChange, hdriSlotIndex, bgColor }: {
   distortionIntensity: number
   onDistortionChange: (intensity: number) => void
   isUnderwater: boolean
   dragVelocity: { x: number; y: number }
   onDragVelocity: (velocity: { x: number; y: number }) => void
+  scrollVelocity: { x: number; y: number }
+  onScrollVelocity: (velocity: { x: number; y: number }) => void
   onProjectClick: (project: ProjectItem | null) => void
   onIdleProjectChange: (project: ProjectItem | null) => void
   hdriSlotIndex: number
+  bgColor: string
 }) {
   return (
     <>
       <HDRIEnvironment active={true} forcedSlotIndex={hdriSlotIndex} showBackground={false} />
-      <SetClearColor />
+      <SetClearColor color={bgColor} />
       <ambientLight intensity={100.3} />
       <directionalLight position={[5, 5, 5]} intensity={0.5} />
       <Grid
         onDistortionChange={onDistortionChange}
         onDragVelocity={onDragVelocity}
+        onScrollVelocity={onScrollVelocity}
         onProjectClick={onProjectClick}
         onIdleProjectChange={onIdleProjectChange}
       />
-      <DraggableSphere dragVelocity={dragVelocity} isUnderwater={isUnderwater} />
+      <DraggableSphere dragVelocity={dragVelocity} scrollVelocity={scrollVelocity} isUnderwater={isUnderwater} />
       <Postprocessing distortionIntensity={distortionIntensity} />
     </>
   )
@@ -345,19 +351,23 @@ export default function LaboratoryPage() {
   const router = useRouter()
   const [distortionIntensity, setDistortionIntensity] = useState(0)
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
+  const [scrollVelocity, setScrollVelocity] = useState({ x: 0, y: 0 })
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
   const { isUnderwater } = useUnderwater()
-  const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(1) // default: middleday (light)
+  const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(() => TIME_SLOTS.indexOf(getCurrentTimeSlot()))
+  const isNight = TIME_SLOTS[hdriSlotIndex]?.name === 'night'
+  const bgColor = isNight ? '#000000' : '#ffffff'
+  const vignetteRgb = isNight ? '0,0,0' : '255,255,255'
 
   return (
     <>
-      <Header isUnderwater={isUnderwater} />
-      <CustomCursor enabled={true} environment="surface" showDragOverlay={false} onRequest={() => {}} />
+      <Header isUnderwater={isUnderwater} hdriSlotIndex={hdriSlotIndex} />
+      <CustomCursor enabled={true} environment="surface" showDragOverlay={false} onRequest={() => {}} hdriSlotIndex={hdriSlotIndex} />
       <main className="w-full h-screen relative">
         <Canvas
           camera={{ position: [0, 0, 12], fov: 60 }}
           gl={{ antialias: true }}
-          style={{ background: BG_COLOR }}
+          style={{ background: bgColor }}
         >
           <Scene 
             distortionIntensity={distortionIntensity}
@@ -365,17 +375,24 @@ export default function LaboratoryPage() {
             isUnderwater={isUnderwater}
             dragVelocity={dragVelocity}
             onDragVelocity={setDragVelocity}
+            scrollVelocity={scrollVelocity}
+            onScrollVelocity={setScrollVelocity}
             onProjectClick={setSelectedProject}
             onIdleProjectChange={setSelectedProject}
             hdriSlotIndex={hdriSlotIndex}
+            bgColor={bgColor}
           />
         </Canvas>
         <div
           className="pointer-events-none absolute inset-0"
           style={{
             zIndex: 20,
-            background:
-              'radial-gradient(ellipse at center, rgba(255,255,255,0) 30%, rgba(255,255,255,0.25) 52%, rgba(255,255,255,0.6) 70%, rgba(255,255,255,0.88) 85%, rgba(255,255,255,1) 100%)',
+            background: [
+              `linear-gradient(to right,  rgba(${vignetteRgb},1) 0%, rgba(${vignetteRgb},0) 11%)`,
+              `linear-gradient(to left,   rgba(${vignetteRgb},1) 0%, rgba(${vignetteRgb},0) 11%)`,
+              `linear-gradient(to bottom, rgba(${vignetteRgb},1) 0%, rgba(${vignetteRgb},0) 8%)`,
+              `linear-gradient(to top,    rgba(${vignetteRgb},1) 0%, rgba(${vignetteRgb},0) 8%)`,
+            ].join(', '),
           }}
         />
         <DevPanel hdriSlotIndex={hdriSlotIndex} onSlotChange={setHdriSlotIndex} />

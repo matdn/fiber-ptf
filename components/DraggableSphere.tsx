@@ -40,10 +40,11 @@ const fragmentShader = `
 
 interface DraggableSphereProps {
   dragVelocity: { x: number; y: number }
+  scrollVelocity?: { x: number; y: number }
   isUnderwater?: boolean
 }
 
-export function DraggableSphere({ dragVelocity, isUnderwater = false }: DraggableSphereProps) {
+export function DraggableSphere({ dragVelocity, scrollVelocity = { x: 0, y: 0 }, isUnderwater = false }: DraggableSphereProps) {
   const meshRef = useRef<THREE.Points>(null!)
   const velocity = useRef({ x: 0, y: 0 })
   
@@ -96,9 +97,13 @@ export function DraggableSphere({ dragVelocity, isUnderwater = false }: Draggabl
   useFrame((state, delta) => {
     if (!meshRef.current) return
     
-    // Appliquer la vélocité du drag
-    velocity.current.x += dragVelocity.x * 0.001
-    velocity.current.y -= dragVelocity.y * 0.001 // Inverser Y pour correspondre au drag
+    // Drag : sens opposé au mouvement de la grille
+    velocity.current.x -= dragVelocity.x * 0.001
+    velocity.current.y += dragVelocity.y * 0.001
+
+    // Scroll : sens opposé à la grille (deltaY > 0 → grille -Y → sphere +Y)
+    velocity.current.x -= scrollVelocity.x * 0.00018
+    velocity.current.y += scrollVelocity.y * 0.00018
     
     // Damping
     velocity.current.x *= 0.95
