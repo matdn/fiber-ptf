@@ -68,13 +68,15 @@ export function useSceneAudio({
   useEffect(() => {
     const handleFirstInteraction = () => {
       if (isMuted) return;
-      playSound("mainSceneBackSound");
-      playSound("mainScenePlusSound");
+      if (!isInSpace && !isUnderwater) {
+        playSound("mainSceneBackSound");
+        playSound("mainScenePlusSound");
+      }
       window.removeEventListener("click", handleFirstInteraction);
       window.removeEventListener("keydown", handleFirstInteraction);
     };
 
-    if (!isMuted) {
+    if (!isMuted && !isInSpace && !isUnderwater) {
       playSound("mainSceneBackSound");
       playSound("mainScenePlusSound");
     }
@@ -88,6 +90,7 @@ export function useSceneAudio({
     };
   }, [isMuted, playSound]);
 
+  // Single source of truth for scene audio routing
   useEffect(() => {
     if (isMuted) {
       stopSound("mainSceneBackSound");
@@ -98,24 +101,6 @@ export function useSceneAudio({
     }
 
     if (isInSpace) {
-      playSound("spaceSceneBackSound");
-      return;
-    }
-
-    if (isUnderwater) {
-      playSound("mainSceneBackSound");
-      playSound("mainScenePlusSound");
-      return;
-    }
-
-    playSound("mainSceneBackSound");
-    playSound("mainScenePlusSound");
-  }, [isMuted, isInSpace, isUnderwater, playSound, stopSound]);
-
-  useEffect(() => {
-    if (isMuted) return;
-
-    if (isInSpace) {
       stopSound("mainSceneBackSound");
       stopSound("mainScenePlusSound");
       stopSound("underwaterSceneBackSound");
@@ -131,9 +116,9 @@ export function useSceneAudio({
       return;
     }
 
+    stopSound("spaceSceneBackSound");
+    stopSound("underwaterSceneBackSound");
     playSound("mainSceneBackSound");
     playSound("mainScenePlusSound");
-    stopSound("underwaterSceneBackSound");
-    stopSound("spaceSceneBackSound");
-  }, [isUnderwater, isInSpace, isMuted, playSound, stopSound]);
+  }, [isMuted, isInSpace, isUnderwater, playSound, stopSound]);
 }

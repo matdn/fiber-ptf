@@ -235,7 +235,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0], transi
     for (let i = 0; i < poolSize; i++) {
       const audio = new Audio('/sounds/starSound.mp3')
       audio.preload = 'auto'
-      audio.volume = 0.2
+      audio.volume = 0.01
       pool.push(audio)
     }
 
@@ -270,7 +270,7 @@ export default function SweatWithSpheres({ interactionCenter = [0, 0, 0], transi
     audioPoolIndexRef.current = (audioPoolIndexRef.current + 1) % audioPoolRef.current.length
 
     audio.currentTime = Math.random() * 0.07
-    audio.volume = Math.min(0.36, 0.12 + intensity * 0.024 + Math.min(cursorSpeed, 0.8) * 0.08)
+    audio.volume = Math.min(0.08, 0.05 + intensity * 0.005 + Math.min(cursorSpeed, 0.8) * 0.06)
     audio.play().catch(() => {})
   }
 

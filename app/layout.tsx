@@ -4,6 +4,7 @@ import { UnderwaterProvider } from "@/contexts/UnderwaterContext";
 import { TransitionProvider } from "@/contexts/TransitionContext";
 import FloatingSoundToggle from "@/components/FloatingSoundToggle";
 import PreventHorizontalNavigation from '@/components/PreventHorizontalNavigation';
+import GlobalClickSound from '@/components/GlobalClickSound';
 
 export const metadata: Metadata = {
   title: "mat4folio",
@@ -27,6 +28,7 @@ export default function RootLayout({
           <TransitionProvider>
           <PreventHorizontalNavigation />
           <FloatingSoundToggle />
+          <GlobalClickSound />
           {children}
           <span style={{
             position: 'fixed',
