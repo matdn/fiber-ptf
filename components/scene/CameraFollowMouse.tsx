@@ -13,6 +13,8 @@ interface CameraFollowMouseProps {
   transitionState?: { isTransitioning: boolean };
   lockedLookAtTargetRef?: { current: THREE.Vector3 | null };
   lockSpaceCamera?: boolean;
+  /** When true, snap camera position + lookAt on the first frame instead of lerping */
+  skipCameraIntro?: boolean;
 }
 
 export function CameraFollowMouse({
@@ -24,6 +26,7 @@ export function CameraFollowMouse({
   transitionState,
   lockedLookAtTargetRef,
   lockSpaceCamera = false,
+  skipCameraIntro = false,
 }: CameraFollowMouseProps) {
   const { camera, pointer, clock } = useThree();
   const lookAtTarget = useRef(new THREE.Vector3());
@@ -36,6 +39,7 @@ export function CameraFollowMouse({
   const dragStartY = useRef(0);
   const dragOffset = useRef(0);
   const dragTarget = useRef(0);
+  const hasSnappedRef = useRef(false);
 
   useEffect(() => {
     if (initialPosition && !isInSpace) {
@@ -115,6 +119,25 @@ export function CameraFollowMouse({
   }, [isInSpace]);
 
   useFrame(() => {
+    // When arriving via page transition, freeze all camera movement until we can snap.
+    // Always return early until snapped — prevents any lerp from running first.
+    if (skipCameraIntro && !hasSnappedRef.current) {
+      if (!isInSpace && curvePosition && initialPosition) {
+        // Surface arrival: snap position + lookAt
+        hasSnappedRef.current = true
+        camera.position.copy(initialPosition)
+        lookAtTarget.current.copy(curvePosition)
+        camera.lookAt(lookAtTarget.current)
+      } else if (isInSpace && curveStarPosition) {
+        // Space arrival: position is handled by instantSpaceEntry — only seed lookAt
+        hasSnappedRef.current = true
+        lookAtTarget.current.copy(curveStarPosition)
+        camera.lookAt(lookAtTarget.current)
+      }
+      // Either way: return early so no lerp runs before the snap
+      return
+    }
+
     // During a scene transition GSAP owns camera.position.
     // We still update lookAt so the camera tracks its target during the flight
     // instead of freezing in the wrong orientation.

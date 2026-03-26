@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { ProjectsGrid } from '@/components/GridClass'
 import { EffectComposer as ThreeComposer, RenderPass, ShaderPass } from 'three/examples/jsm/Addons.js'
@@ -12,6 +11,7 @@ import { DraggableSphere } from '@/components/DraggableSphere'
 import { CustomCursor } from '@/components/CustomCursor'
 import { HDRIEnvironment, TIME_SLOTS, getCurrentTimeSlot } from '@/components/scene/HDRIEnvironment'
 import { DevPanel } from '@/components/DevPanel'
+import { usePageTransition } from '@/contexts/TransitionContext'
 import { getProjectSlug, type ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
 
@@ -348,7 +348,7 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
 }
 
 export default function LaboratoryPage() {
-  const router = useRouter()
+  const { navigate } = usePageTransition()
   const [distortionIntensity, setDistortionIntensity] = useState(0)
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const [scrollVelocity, setScrollVelocity] = useState({ x: 0, y: 0 })
@@ -366,7 +366,7 @@ export default function LaboratoryPage() {
       <main className="w-full h-screen relative">
         <Canvas
           camera={{ position: [0, 0, 12], fov: 60 }}
-          gl={{ antialias: true }}
+          gl={{ antialias: true}}
           style={{ background: bgColor }}
         >
           <Scene 
@@ -402,7 +402,7 @@ export default function LaboratoryPage() {
             if (!selectedProject) return
             const slug = getProjectSlug(selectedProject)
             if (!slug) return
-            router.push(`/laboratory/${slug}`)
+            navigate(`/laboratory/${slug}`)
           }}
         />
       </main>

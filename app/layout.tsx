@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UnderwaterProvider } from "@/contexts/UnderwaterContext";
+import { TransitionProvider } from "@/contexts/TransitionContext";
 import FloatingSoundToggle from "@/components/FloatingSoundToggle";
 import PreventHorizontalNavigation from '@/components/PreventHorizontalNavigation';
 
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <UnderwaterProvider>
+          <TransitionProvider>
           <PreventHorizontalNavigation />
           <FloatingSoundToggle />
           {children}
@@ -35,12 +37,13 @@ export default function RootLayout({
             color: '#ffffff',
             mixBlendMode: 'difference',
             pointerEvents: 'none',
-            zIndex: 9999,
+            zIndex: 100,
             fontFamily: 'Mabry Pro, sans-serif',
             textTransform: 'uppercase',
           }}>
             matis dene portfolio
           </span>
+          </TransitionProvider>
         </UnderwaterProvider>
       </body>
     </html>

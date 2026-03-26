@@ -8,6 +8,8 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Link from 'next/link'
 import { TIME_SLOTS } from '@/lib/hdriSlots'
+import { usePageTransition } from '@/contexts/TransitionContext'
+import { getVignetteColor } from '@/components/loaders/InkRevealCanvas'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -57,12 +59,14 @@ export default function Header({
   isInSpace = false,
   onSpaceToggle,
   onWorkToggle,
+  onReset,
   hdriSlotIndex,
 }: {
   isUnderwater?: boolean
   isInSpace?: boolean
   onSpaceToggle?: (value: boolean) => void
   onWorkToggle?: () => void
+  onReset?: () => void
   hdriSlotIndex?: number
 }) {
   const [curveOpacity, setCurveOpacity] = useState(0)
@@ -168,6 +172,10 @@ export default function Header({
   }, [])
 
   const isNight = hdriSlotIndex === undefined || TIME_SLOTS[hdriSlotIndex]?.name === 'night'
+  const { navigate } = usePageTransition()
+
+  const slotName = hdriSlotIndex !== undefined ? (TIME_SLOTS[hdriSlotIndex]?.name ?? 'night') : 'night'
+  const transitionColor = getVignetteColor(slotName)
 
   return (
     <>
@@ -176,7 +184,7 @@ export default function Header({
         <nav className={`group mix-blend-difference hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl rounded px-6 py-3  ${isNight ? 'bg-white/5' : 'bg-black/5 '}`} style={{ fontFamily: 'Neopixel, sans-serif' }}>
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              <a href="/">
+              <a href="/" onClick={(e) => { e.preventDefault(); navigate('/', onReset, transitionColor) }}>
                 <Canvas camera={{ position: [0, 0, 5], fov: 50 }} gl={{ alpha: true, antialias: true }}>
                   <ambientLight intensity={100.5} />
                   <pointLight position={[10, 10, 10]} intensity={1} />
@@ -187,12 +195,13 @@ export default function Header({
 
             <div className="flex items-center   gap-4 overflow-hidden max-w-0 ml-0 opacity-0 -translate-x-2 pointer-events-none transition-all 
             duration-800 ease-out group-hover:max-w-[320px] group-hover:ml-4 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto">
-              <Link
-                href="/laboratory"
+              <button
+                type="button"
+                onClick={() => navigate('/laboratory', undefined, transitionColor)}
                 className="text-white/80   hover:text-white transition-colors whitespace-nowrap"
               >
-                works
-              </Link>
+                laboratory
+              </button>
 
               {onSpaceToggle ? (
                 <button
@@ -209,14 +218,22 @@ export default function Header({
                   about
                 </button>
               ) : (
-                <Link href="/?space=1" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => navigate('/?space=1', undefined, transitionColor)}
+                  className="text-white/80 hover:text-white transition-colors whitespace-nowrap"
+                >
                   about
-                </Link>
+                </button>
               )}
 
-              <a href="/contact" className="text-white/80 hover:text-white transition-colors whitespace-nowrap">
+              <button
+                type="button"
+                onClick={() => navigate('/contact', undefined, transitionColor)}
+                className="text-white/80 hover:text-white transition-colors whitespace-nowrap"
+              >
                 contact
-              </a>
+              </button>
             </div>
           </div>
         </nav>
@@ -253,13 +270,13 @@ export default function Header({
               </li>
 
               <li>
-                <Link
-                  href="/laboratory"
-                  className="text-white/80 hover:text-white transition-colors block text-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                <button
+                  type="button"
+                  className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/laboratory', undefined, transitionColor) }}
                 >
                   works
-                </Link>
+                </button>
               </li>
               <li>
                 {onSpaceToggle ? (
@@ -278,23 +295,23 @@ export default function Header({
                     about
                   </button>
                 ) : (
-                  <Link
-                    href="/?space=1"
-                    className="text-white/80 hover:text-white transition-colors block text-lg"
-                    onClick={() => setIsMobileMenuOpen(false)}
+                  <button
+                    type="button"
+                    className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                    onClick={() => { setIsMobileMenuOpen(false); navigate('/?space=1', undefined, transitionColor) }}
                   >
                     about
-                  </Link>
+                  </button>
                 )}
               </li>
               <li>
-                <a 
-                  href="#contact" 
-                  className="text-white/80 hover:text-white transition-colors block text-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                <button
+                  type="button"
+                  className="text-white/80 hover:text-white transition-colors block text-lg text-left"
+                  onClick={() => { setIsMobileMenuOpen(false); navigate('/contact', undefined, transitionColor) }}
                 >
                   contact
-                </a>
+                </button>
               </li>
             </ul>
           </nav>

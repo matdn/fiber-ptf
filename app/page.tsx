@@ -1,16 +1,18 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { Loader } from '@/components/Loader'
+import { usePageTransition } from '@/contexts/TransitionContext'
 import { useUnderwater } from '@/contexts/UnderwaterContext'
 import { CustomCursor } from '@/components/CustomCursor'
 import Header from '@/components/Header'
 import AudioControls from '@/components/AudioControls'
 import { TIME_SLOTS, getCurrentTimeSlot } from '@/lib/hdriSlots'
+import { getVignetteColor } from '@/components/loaders/InkRevealCanvas'
 import { HDRIEnvironment } from '@/components/scene/HDRIEnvironment'
 import { DevPanel } from '@/components/DevPanel'
 
@@ -89,9 +91,40 @@ function MobileSimpleLanding({ hdriSlotIndex }: { hdriSlotIndex: number }) {
 
 export default function Home() {
   const { isUnderwater, setIsUnderwater, isInSpace, setIsInSpace } = useUnderwater()
-  const [isLoaded, setIsLoaded] = useState(false)
+  const { isTransitioning, pendingHref } = usePageTransition()
+  const [isLoaded, setIsLoaded] = useState(isTransitioning)
+  const [canvasReady, setCanvasReady] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [instantSpaceEntry, setInstantSpaceEntry] = useState(false)
+  const [instantSpaceEntry, setInstantSpaceEntry] = useState(() => {
+    if (typeof window === 'undefined') return false
+    // When arriving via transition, trust pendingHref (URL may lag); else read the URL
+    return false // will be set by mount effect below
+  })
+
+  // Consolidate all state initialisation from navigation at mount
+  const isTransitioningAtMount = useRef(isTransitioning)
+  const pendingHrefAtMount = useRef(pendingHref)
+  useEffect(() => {
+    if (isTransitioningAtMount.current) {
+      // Arriving via page transition — use pendingHref which is always reliable
+      const toSpace = pendingHrefAtMount.current?.includes('space=1') ?? false
+      setIsInSpace(toSpace)
+      setIsUnderwater(false)
+      if (toSpace) setInstantSpaceEntry(true)
+    } else {
+      // Hard navigation — fall back to URL params
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('space') === '1') {
+        setIsInSpace(true)
+        setInstantSpaceEntry(true)
+        setIsUnderwater(false)
+        window.history.replaceState({}, '', '/')
+      } else if (params.get('underwater') === '1') {
+        setIsUnderwater(true)
+        window.history.replaceState({}, '', '/')
+      }
+    }
+  }, [setIsInSpace, setIsUnderwater])
   const [underwaterRequest, setUnderwaterRequest] = useState<{ toUnderwater: boolean; id: number } | null>(null)
   const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(() => {
     const auto = getCurrentTimeSlot()
@@ -115,24 +148,6 @@ export default function Home() {
     return () => media.removeEventListener('change', update)
   }, [])
 
-  // Direct underwater mode from URL param (no animation)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('underwater') === '1') {
-      setIsUnderwater(true)
-      // Clean the URL without triggering a navigation
-      window.history.replaceState({}, '', '/')
-      return
-    }
-
-    if (params.get('space') === '1') {
-      setIsUnderwater(false)
-      setIsInSpace(true)
-      setInstantSpaceEntry(true)
-      window.history.replaceState({}, '', '/')
-    }
-  }, [setIsInSpace, setIsUnderwater])
-
   const handleVolumeChange = (key: string, volume: number) => {
     setVolumes((prev) => ({ ...prev, [key]: volume }))
   }
@@ -143,16 +158,23 @@ export default function Home() {
 
   return (
     <main className="w-full overflow-hidden h-screen">
-      {!isLoaded && <Loader onLoaded={() => setIsLoaded(true)} />}
+      {!isLoaded && <Loader onLoaded={() => setIsLoaded(true)} canvasReady={canvasReady} color={getVignetteColor(TIME_SLOTS[hdriSlotIndex]?.name ?? 'night')} />}
       
       {isLoaded && (
         <Header
           isUnderwater={isUnderwater}
           isInSpace={isInSpace}
           hdriSlotIndex={hdriSlotIndex}
+          onReset={() => {
+            setIsInSpace(false)
+            setIsUnderwater(false)
+            setInstantSpaceEntry(false)
+          }}
           onSpaceToggle={(value) => {
             setIsUnderwater(false)
             setIsInSpace(value)
+            // Only instant when arriving via URL/transition — normal button click should animate
+            if (!value) setInstantSpaceEntry(false)
           }}
           onWorkToggle={() => {
             setIsInSpace(false)
@@ -202,6 +224,8 @@ export default function Home() {
           underwaterRequest={underwaterRequest}
           volumes={volumes}
           hdriSlotIndex={hdriSlotIndex}
+          onFirstFrame={() => setCanvasReady(true)}
+          skipCameraIntro={isTransitioning}
         />
       </div>
 

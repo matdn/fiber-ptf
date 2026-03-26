@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { TIME_SLOTS } from '@/lib/hdriSlots'
@@ -14,9 +15,23 @@ interface ModelProps {
   isInSpace: boolean
   spaceTransitionProgress?: number
   hdriSlotIndex?: number
+  /** Fires once on the first frame the model is actually rendered */
+  onReady?: () => void
 }
 
-export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace, spaceTransitionProgress = 0, hdriSlotIndex }: ModelProps) {
+function ModelReadyOnce({ onReady }: { onReady: () => void }) {
+  const firedRef = useRef(false)
+  const onReadyRef = useRef(onReady)
+  useEffect(() => { onReadyRef.current = onReady }, [onReady])
+  useFrame(() => {
+    if (firedRef.current) return
+    firedRef.current = true
+    onReadyRef.current()
+  })
+  return null
+}
+
+export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnderwater, isInSpace, spaceTransitionProgress = 0, hdriSlotIndex, onReady }: ModelProps) {
   const { scene } = useGLTF('3D/model.glb')
   const curveRef = useRef<THREE.Object3D | null>(null)
   const curveStarRef = useRef<THREE.Object3D | null>(null)
@@ -181,8 +196,9 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
           </group>
         </group>
       )}
+      {onReady && <ModelReadyOnce onReady={onReady} />}
     </>
   )
 }
 
-useGLTF.preload('/model.glb')
+useGLTF.preload('/3D/model.glb')

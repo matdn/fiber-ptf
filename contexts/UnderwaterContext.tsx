@@ -15,7 +15,10 @@ const UnderwaterContext = createContext<UnderwaterContextType | undefined>(undef
 
 export function UnderwaterProvider({ children }: { children: ReactNode }) {
   const [isUnderwater, setIsUnderwater] = useState(false)
-  const [isInSpace, setIsInSpace] = useState(false)
+  const [isInSpace, setIsInSpace] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return new URLSearchParams(window.location.search).get('space') === '1'
+  })
     const [isMuted, setIsMuted] = useState(false)
 
   return (

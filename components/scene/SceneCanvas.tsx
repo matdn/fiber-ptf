@@ -46,6 +46,8 @@ export const SceneCanvas = memo(function SceneCanvas({
   forceCloseRequestId,
   hdriSlotIndex,
   focusProjectRequest,
+  onModelReady,
+  skipCameraIntro,
   onCreated,
 }: {
   isUnderwater: boolean;
@@ -71,6 +73,8 @@ export const SceneCanvas = memo(function SceneCanvas({
   forceCloseRequestId: number;
   hdriSlotIndex?: number;
   focusProjectRequest?: { id: number; project: ProjectItem } | null;
+  onModelReady?: () => void;
+  skipCameraIntro?: boolean;
   onCreated: (payload: { camera: THREE.Camera; scene: THREE.Scene }) => void;
 }) {
   const fallbackOrbitCenter = useMemo(() => new THREE.Vector3(0, 200, 0), []);
@@ -247,6 +251,7 @@ export const SceneCanvas = memo(function SceneCanvas({
         isInSpace={isInSpace}
         transitionState={transitionState}
         lockedLookAtTargetRef={cameraLookAtLockRef}
+        skipCameraIntro={skipCameraIntro}
         lockSpaceCamera={Boolean(
           (instantSpaceEntry && isInSpace) || isCameraLockedByCarousel,
         )}
@@ -273,6 +278,7 @@ export const SceneCanvas = memo(function SceneCanvas({
           isInSpace={isInSpace}
           spaceTransitionProgress={spaceTransitionProgress}
           hdriSlotIndex={hdriSlotIndex}
+          onReady={onModelReady}
         />
 
         {/* {!isInSpace && !isUnderwater && curvePosition && (

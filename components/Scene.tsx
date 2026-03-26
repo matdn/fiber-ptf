@@ -53,6 +53,8 @@ export default function Scene({
   underwaterRequest,
   volumes,
   hdriSlotIndex,
+  onFirstFrame,
+  skipCameraIntro,
 }: {
   onUnderwaterToggle: (value: boolean) => void;
   isUnderwater: boolean;
@@ -61,6 +63,8 @@ export default function Scene({
   underwaterRequest?: { toUnderwater: boolean; id: number } | null;
   volumes?: { [key: string]: number };
   hdriSlotIndex?: number;
+  onFirstFrame?: () => void;
+  skipCameraIntro?: boolean;
 }) {
   const { isMuted } = useUnderwater();
 
@@ -468,6 +472,8 @@ export default function Scene({
             forceCloseRequestId={carouselCloseRequestId}
             hdriSlotIndex={hdriSlotIndex}
             focusProjectRequest={focusProjectRequest}
+            onModelReady={onFirstFrame}
+            skipCameraIntro={skipCameraIntro}
             onCreated={({ camera, scene }) => {
               cameraRef.current = camera;
               sceneRef.current = scene;

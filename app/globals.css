@@ -17,6 +17,10 @@ body {
   --foreground: #171717;
 }
 
+img{
+  filter: grayscale(100%);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
