@@ -3,7 +3,7 @@ import rawProjects from './projects.json'
 export type ProjectDetailBlock =
   | { type: 'text'; content: string }
   | { type: 'image'; src: string; height?: number }
-  | { type: 'video'; src: string; height?: number }
+  | { type: 'video'; src: string; height?: number; fullWidth?: boolean; padding?: boolean }
   | {
       type: 'feature-grid'
       heading: string
@@ -24,7 +24,7 @@ type RawProject = {
   detailBlocks?: Array<
     | { type: 'text'; content: string }
     | { type: 'image'; src: string; height?: number }
-    | { type: 'video'; src: string; height?: number }
+    | { type: 'video'; src: string; height?: number; fullWidth?: boolean; padding?: boolean }
     | { type: 'feature-grid'; heading: string; videoSrc: string; imageSrc: string; paragraphs: string[] }
   >
 }

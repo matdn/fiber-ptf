@@ -153,10 +153,10 @@ export const ProjectDetailView = memo(function ProjectDetailView({
         {/* ── Hero: split (text left / video right) ───────────────── */}
         <section style={{ padding: "2rem 2.5rem 0" }}>
           <div
-            className="grid grid-cols-1 lg:grid-cols-2"
+            className=" grid-cols-1 lg:grid-cols-2 flex flex-col-reverse md:flex md:justify-between md:flex-row"
             style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif" }}
           >
-            <div className="flex flex-col" style={{ minHeight: "62vh" }}>
+            <div className="flex flex-col w-full md:w-1/2" style={{ minHeight: "62vh" }}>
               <p
                 style={{
                   fontSize: "0.95rem",
@@ -180,7 +180,6 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   letterSpacing: "-0.02em",
                   lineHeight: 1.12,
                   color: "#000000",
-                  maxWidth: "40vw",
                   marginBottom: "1.4rem",
                 }}
               >
@@ -200,7 +199,6 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                         fontSize: "0.8rem",
                         lineHeight: 1.82,
                         color: "rgba(0,0,0,0.38)",
-                        maxWidth: "40vw",
                         fontFamily: '"Mabry Pro", sans-serif',
 
                       }}
@@ -262,7 +260,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
 
             <div
               data-pdv-hero-media
-              className="relative overflow-hidden w-full "
+              className="relative overflow-hidden md:w-1/2 "
               style={{
                 height: "80vh",
                 background: "rgba(0,0,0,0.04)",
@@ -278,7 +276,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   playsInline
                   draggable={false}
                   onDragStart={(event) => event.preventDefault()}
-                  className="absolute inset-0 w-full h-full object-cover scale-105"
+                  className="absolute inset-0 m-w-1/2 h-full object-cover scale-105"
                 />
               ) : heroMedia?.type === "image" ? (
                 <Image
@@ -348,18 +346,18 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                     letterSpacing: "-0.03em",
                     lineHeight: 1.1,
                     color: "#000",
-                    maxWidth: "22ch",
+                    maxWidth: "26ch",
                     marginBottom: "2rem",
                     textTransform: "uppercase",
                   }}
                 >
                   {block.heading}
                 </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "0.6rem", marginBottom: "0.6rem" }}>
-                  <div className="relative overflow-hidden" style={{ height: "clamp(220px, 35vw, 480px)", borderRadius: "0px" }}>
+                <div style={{display: "flex", flexDirection: "column", gap: "2rem", marginBottom: "0.6rem" }}>
+                  <div className="relative overflow-hidden" style={{ height: "80dvh", borderRadius: "0px" }}>
                     <video src={block.videoSrc} autoPlay muted loop playsInline draggable={false} onDragStart={(event) => event.preventDefault()} className="absolute inset-0 w-full h-full object-cover" />
                   </div>
-                  <div className="relative overflow-hidden" style={{ height: "clamp(220px, 35vw, 480px)", borderRadius: "0px" }}>
+                  <div className="relative overflow-hidden" style={{ height: "80dvh", borderRadius: "0px" }}>
                     <Image src={block.imageSrc} alt="" fill sizes="45vw" draggable={false} style={{ objectFit: "cover" }} />
                   </div>
                 </div>
