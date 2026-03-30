@@ -411,8 +411,8 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
                 }}
               >
-                <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet précédent</p>
-                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease" }}>{prevProject.title}</h3>
+                {/* <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet précédent</p> */}
+                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease", textTransform: "uppercase" }}>{prevProject.title}</h3>
               </button>
             </div>
 
@@ -441,8 +441,8 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
                 }}
               >
-                <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet suivant</p>
-                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease" }}>{nextProject.title}</h3>
+                {/* <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet suivant</p> */}
+                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease", textTransform: "uppercase" }}>{nextProject.title}</h3>
               </button>
             </div>
           </div>
