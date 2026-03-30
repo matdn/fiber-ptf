@@ -59,10 +59,10 @@
     "detailBlocks": [
       {
         "type": "text",
-        "content": "Expérience e-commerce premium avec navigation cinématique, transitions produit et focus performance web."
+        "content": "Rubens est une déclinaison de Helmet, pensée comme une nouvelle exploration visuelle autour du carousel vertical infini.\n\nL'idée était de reprendre cette base interactive pour la pousser dans une direction plus éditoriale et plus expressive, en travaillant davantage la composition, le rythme et la présence des visuels dans l'espace.\n\nLe projet a été développé avec React Three Fiber et Three.js, dans une logique d'expérimentation autour de la mise en scène et du mouvement en 3D temps réel."
       }
     ],
-    "description": "Expérience e-commerce premium avec navigation cinématique, transitions produit et focus performance web."
+    "description": "Déclinaison éditoriale de Helmet — carousel vertical infini revisité avec React Three Fiber, pour une mise en scène plus expressive."
   },
   {
     "title": "Dithering",
@@ -79,10 +79,10 @@
       },
       {
         "type": "text",
-        "content": "Dashboard data-centric avec visualisations temps réel, composants modulaires et UX orientée décision."
+        "content": "Dithering est un projet personnel qui s'inscrit dans une série d'expérimentations visuelles et techniques.\n\nDans ce test, j'explore le dithering, une technique de rendu qui simule des nuances et des dégradés à partir de motifs de points ou de trames, souvent utilisée pour donner une texture plus brute, graphique ou rétro à une image.\n\nL'effet a été développé en post-processing à l'aide d'un shader en WebGL, avec une stack basée sur Three.js et WebGL."
       }
     ],
-    "description": "Dashboard data-centric avec visualisations temps réel, composants modulaires et UX orientée décision."
+    "description": "Exploration visuelle du dithering : un shader WebGL qui transforme le rendu en texture brute, graphique et rétro via Three.js."
   },
   {
     "title": "HELMET",
@@ -96,9 +96,13 @@
         "type": "video",
         "src": "/imagesProject/helmet/helmet_video_1.mp4",
         "height": 280
+      },
+      {
+        "type": "text",
+        "content": "Helmet est un projet d'expérimentation autour de la création d'un carousel vertical infini à l'esthétique créative et immersive.\n\nDéveloppé avec React Three Fiber et Three.js, ce test m'a permis d'explorer de nouvelles approches d'animation et de composition en 3D temps réel.\n\nLe projet a ensuite donné lieu à un article sur Codrops, dans lequel l'effet est expliqué en détail, ainsi qu'à une déclinaison intitulée Rubens."
       }
     ],
-    "description": "Plateforme créative pour studio digital: vitrine projets, pipeline média, et direction artistique interactive."
+    "description": "Carousel vertical infini en 3D temps réel — expérimentation avec React Three Fiber, publiée sur Codrops."
   },
   {
     "title": "LABNOIR ",
@@ -131,11 +135,7 @@
       },
       {
         "type": "text",
-        "content": "NOIR est une campagne éditoriale construite autour du vide. Chaque image refuse la surcharge — une seule matière, une seule lumière rasante, un modèle ancré dans le cadre comme une sculpture. Le mouvement est minimal, presque arrêté."
-      },
-      {
-        "type": "text",
-        "content": "La direction artistique s'inspire de la photographie de mode des années 90, réinterprétée à travers des outils contemporains : simulation de tissu en temps réel, grain organique ajouté en post, colorimétrie désaturée pour effacer les repères temporels."
+        "content": "LABNOIR est une expérience interactive créée en deux jours aux Gobelins autour du thème de l'angoisse.\n\nJ'y ai conçu un labyrinthe génératif en JavaScript vanilla, avec Three.js et WebGL pour le rendu et la post-production."
       }
     ]
   },
@@ -156,11 +156,7 @@
       },
       {
         "type": "text",
-        "content": "MATZO est une expérience interactive construite sur la récursion et la fractale. Chaque geste produit une prolongation infinie du motif, créant une sensation d'immersion progressive."
-      },
-      {
-        "type": "text",
-        "content": "Le projet explore la limite entre l'interface et l'art génératif, où chaque interaction crée une nouvelle boucle visuelle. La performance et la fluidité sont au cœur de l'expérience utilisateur."
+        "content": "Matzo est un mini-jeu narratif actuellement en développement.\n\nLe joueur y incarne un petit personnage perdu dans l'obscurité, en quête de son chemin et de son amie Jo, dans un univers à la fois fragile, silencieux et énigmatique.\n\nLe projet mêle exploration, résolution d'énigmes et progression narrative, avec l'envie de construire une expérience portée autant par l'atmosphère que par le gameplay. À travers ses déplacements, les éléments du décor et les obstacles rencontrés, le joueur découvre peu à peu un monde tamisé, mystérieux, où chaque avancée participe à renforcer le lien entre récit, espace et sensation.\n\nPensé comme une expérience à la fois sensible et immersive, Matzo s'articule autour d'une ambiance douce, contemplative et légèrement inquiétante, où la pénombre devient autant un décor qu'un langage narratif."
       }
     ]
   }
