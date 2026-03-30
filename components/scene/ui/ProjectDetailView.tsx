@@ -151,7 +151,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
         </button>
 
         {/* ── Hero: split (text left / video right) ───────────────── */}
-        <section style={{ padding: "2rem 2.5rem 0" }}>
+        <section style={{ padding: "1rem 1.5rem 0" }}>
           <div
             className=" grid-cols-1 lg:grid-cols-2 flex flex-col-reverse md:flex md:justify-between md:flex-row"
             style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif" }}

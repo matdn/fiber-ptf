@@ -3,7 +3,7 @@
     "title": "Altitude 101",
     "year": "2024",
     "tags": ["Video Production", "3D", "Motion", "Next.js", "WebGL"],
-    "projectUrl": "https://tympanus.net/Tutorials/3DImageTubeR3F/",
+    "projectUrl": "https://immersive.altitude101.com/",
     "imageUrl": "/imagesProject/img1.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_2.mp4",
@@ -47,7 +47,7 @@
         
       }
     ],
-    "description": "Direction visuelle et expérience immersive du projet Altitude 101, entre identité 3D, motion et narration interactive."
+    "description": "Expérience web immersive, Three.js, WebGL et GSAP."
   },
   {
     "title": "Rubens",
@@ -62,7 +62,7 @@
         "content": "Rubens est une déclinaison de Helmet, pensée comme une nouvelle exploration visuelle autour du carousel vertical infini.\n\nL'idée était de reprendre cette base interactive pour la pousser dans une direction plus éditoriale et plus expressive, en travaillant davantage la composition, le rythme et la présence des visuels dans l'espace.\n\nLe projet a été développé avec React Three Fiber et Three.js, dans une logique d'expérimentation autour de la mise en scène et du mouvement en 3D temps réel."
       }
     ],
-    "description": "Déclinaison éditoriale de Helmet — carousel vertical infini revisité avec React Three Fiber, pour une mise en scène plus expressive."
+    "description": "Carousel vertical infini, direction éditoriale avec R3F."
   },
   {
     "title": "Dithering",
@@ -82,7 +82,7 @@
         "content": "Dithering est un projet personnel qui s'inscrit dans une série d'expérimentations visuelles et techniques.\n\nDans ce test, j'explore le dithering, une technique de rendu qui simule des nuances et des dégradés à partir de motifs de points ou de trames, souvent utilisée pour donner une texture plus brute, graphique ou rétro à une image.\n\nL'effet a été développé en post-processing à l'aide d'un shader en WebGL, avec une stack basée sur Three.js et WebGL."
       }
     ],
-    "description": "Exploration visuelle du dithering : un shader WebGL qui transforme le rendu en texture brute, graphique et rétro via Three.js."
+    "description": "Post-processing WebGL — exploration visuelle du dithering."
   },
   {
     "title": "HELMET",
@@ -102,7 +102,7 @@
         "content": "Helmet est un projet d'expérimentation autour de la création d'un carousel vertical infini à l'esthétique créative et immersive.\n\nDéveloppé avec React Three Fiber et Three.js, ce test m'a permis d'explorer de nouvelles approches d'animation et de composition en 3D temps réel.\n\nLe projet a ensuite donné lieu à un article sur Codrops, dans lequel l'effet est expliqué en détail, ainsi qu'à une déclinaison intitulée Rubens."
       }
     ],
-    "description": "Carousel vertical infini en 3D temps réel — expérimentation avec React Three Fiber, publiée sur Codrops."
+    "description": "Carousel 3D infini, expérimentation R3F sur Codrops."
   },
   {
     "title": "LABNOIR ",
@@ -111,7 +111,7 @@
     "imageUrl": "/imagesProject/cm/cm.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_2.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_1 .mp4",
-    "description": "Editorial campaign redefining silence through texture, shadow, and obsessive restraint.",
+    "description": "Labyrinthe génératif autour du thème de l'angoisse.",
     "detailBlocks": [
       {
         "type": "video",
@@ -147,7 +147,7 @@
     "imageUrl": "/imagesProject/matzo/matzo_img_1.png",
     "detailImageUrl": null,
     "detailVideoUrl": "/imagesProject/matzo/matzo_video_1.mp4",
-    "description": "Interactive experience blending motion design with spatial thinking and immersive storytelling.",
+    "description": "Mini-jeu narratif dans un univers sombre.",
     "detailBlocks": [
       {
         "type": "video",

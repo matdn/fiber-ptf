@@ -307,10 +307,11 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
           {/* Ghost: invisible, holds layout height */}
           <div
             aria-hidden
-            className="font-light text-transparent text-center leading-none select-none"
+            className="font-light text-center leading-none select-none"
             style={{
               fontSize: "clamp(5rem, 15vw, 14rem)",
               letterSpacing: "-0.04em",
+              color: "rgba(0,0,0,0.02)",
             }}
           >
             PORTFOLIO
