@@ -101,7 +101,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
     <div
       ref={rootRef}
       className="w-full"
-      style={{ position: "relative", paddingTop: "2dvh" }}
+      style={{ position: "relative", paddingTop: "8dvh" }}
     >
       <div
         id="project-detail-footer-sentinel"
@@ -124,15 +124,15 @@ export const ProjectDetailView = memo(function ProjectDetailView({
           type="button"
           onClick={() => router.push('/laboratory')}
           style={{
-            position: "relative",
-            marginLeft: "1.2rem",
-            marginTop: "0.5rem",
+            position: "fixed",
+            marginLeft: "2.5rem",
+            marginTop: "0rem",
             marginBottom: "1.25rem",
             fontSize: "0.7rem",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "rgba(0,0,0,0.35)",
-            background: "rgba(0,0,0,0.05)",
+            color: "rgba(0,0,0,1.0)",
+            background: "rgba(255,255,255,1.5)",
             border: "none",
             padding: "0.8rem 1.2rem",
             borderRadius: "0px",
@@ -140,6 +140,8 @@ export const ProjectDetailView = memo(function ProjectDetailView({
             transition: "all 0.3s ease",
             fontWeight: 500,
             fontFamily: '"Mabry Pro", sans-serif',
+            zIndex: 10000,
+            mixBlendMode: "difference",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.8)";
@@ -152,10 +154,10 @@ export const ProjectDetailView = memo(function ProjectDetailView({
         </button>
 
         {/* ── Hero: split (text left / video right) ───────────────── */}
-        <section style={{ padding: "1rem 1.5rem 0" }}>
+        <section style={{ padding: "1rem 1.5rem 0", display: "flex", justifyContent: "center" }}>
           <div
             className=" grid-cols-1 lg:grid-cols-2 flex flex-col-reverse md:flex md:justify-between md:flex-row"
-            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif" }}
+            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif", maxWidth: "95dvw" }}
           >
             <div className="flex flex-col w-full md:w-1/2" style={{ minHeight: "62vh" }}>
               <p
@@ -166,6 +168,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   color: "rgba(0,0,0)",
                   paddingTop: "0.4rem",
                   fontWeight: 800,
+                  transform: "translateY(50px)",
                 }}
               >
                 {project.title}
@@ -263,7 +266,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
               data-pdv-hero-media
               className="relative overflow-hidden md:w-1/2 "
               style={{
-                height: "80vh",
+                height: "90vh",
                 background: "rgba(0,0,0,0.04)",
                 borderRadius: "0px",
               }}
