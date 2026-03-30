@@ -101,7 +101,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
     <div
       ref={rootRef}
       className="w-full"
-      style={{ position: "relative", paddingTop: "10dvh" }}
+      style={{ position: "relative", paddingTop: "2dvh" }}
     >
       <div
         id="project-detail-footer-sentinel"
@@ -125,20 +125,21 @@ export const ProjectDetailView = memo(function ProjectDetailView({
           onClick={() => router.push('/laboratory')}
           style={{
             position: "relative",
-            marginLeft: "2.5rem",
+            marginLeft: "1.2rem",
             marginTop: "0.5rem",
             marginBottom: "1.25rem",
             fontSize: "0.7rem",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             color: "rgba(0,0,0,0.35)",
-            background: "none",
+            background: "rgba(0,0,0,0.05)",
             border: "none",
-            padding: "0",
+            padding: "0.8rem 1.2rem",
             borderRadius: "0px",
             cursor: "pointer",
             transition: "all 0.3s ease",
             fontWeight: 500,
+            fontFamily: '"Mabry Pro", sans-serif',
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.8)";
@@ -147,7 +148,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
             (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
           }}
         >
-          ← Retour
+          Retour
         </button>
 
         {/* ── Hero: split (text left / video right) ───────────────── */}
