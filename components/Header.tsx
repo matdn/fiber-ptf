@@ -171,17 +171,18 @@ export default function Header({
     }
   }, [])
 
-  const isNight = hdriSlotIndex === undefined || TIME_SLOTS[hdriSlotIndex]?.name === 'night'
   const { navigate } = usePageTransition()
 
   const slotName = hdriSlotIndex !== undefined ? (TIME_SLOTS[hdriSlotIndex]?.name ?? 'night') : 'night'
+  const isNight = slotName === 'night'
+  const isMorning = slotName === 'morning'
   const transitionColor = getVignetteColor(slotName)
 
   return (
     <>
-      <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: isNight ? 'difference' : 'difference' }}>
+      <header ref={header} className={`md:top-2 fixed z-50 h-24 w-full ${animClass} w-[80vw] md:-translate-x-1/2 md:left-1/2 right-0  bottom-2`} style={{ mixBlendMode: isMorning ? 'normal' : 'difference', color: isMorning ? '#ffffff' : undefined }}>
         {/* Desktop Menu */}
-        <nav className={`group mix-blend-difference hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl rounded px-6 py-3  ${isNight ? 'bg-white/5' : 'bg-black/5 '}`} style={{ fontFamily: 'Neopixel, sans-serif' }}>
+        <nav className={`group hidden md:block  left-1/2 md:-translate-x-1/2 absolute top-4 backdrop-blur-xl rounded px-6 py-3  ${isMorning ? '' : 'mix-blend-difference'} ${isNight ? 'bg-white/5' : 'bg-black/5 '}`} style={{ fontFamily: 'Neopixel, sans-serif' }}>
           <div className="flex items-center">
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <a href="/" onClick={(e) => { e.preventDefault(); navigate('/', onReset, transitionColor) }}>

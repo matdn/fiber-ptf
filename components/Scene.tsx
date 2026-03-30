@@ -121,9 +121,9 @@ export default function Scene({
   const ULTRA_FOG = useMemo(() => ({ near: 0.005, far: 0.45 }), []);
   const DEFAULT_UNDERWATER_FOG = useMemo(() => ({ near: 15, far: 140 }), []);
   const INITIAL_CAMERA_POSITION = useMemo(
-    () => new THREE.Vector3(-20, -10, -10),
-      //  () => new THREE.Vector3(20, -10, -50),
-    // () => new THREE.Vector3(-100, 10, -30),
+    () => Math.random() < 0.5
+      ? new THREE.Vector3(-20, -10, -10)
+      : new THREE.Vector3(20, -10, -50),
     [],
   );
 

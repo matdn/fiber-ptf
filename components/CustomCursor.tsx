@@ -84,7 +84,7 @@ export function CustomCursor({
       lockedEl.current = getInteractiveUnderPointer(mouse.current.x, mouse.current.y)
     }
 
-    const PIXEL_SIZE = 30
+    const PIXEL_SIZE = 40
     let offscreenCanvas: HTMLCanvasElement | null = null
 
     const onMouseDown = (e: MouseEvent) => {
