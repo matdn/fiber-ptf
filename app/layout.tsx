@@ -30,7 +30,7 @@ export default function RootLayout({
           <FloatingSoundToggle />
           <GlobalClickSound />
           {children}
-          <span style={{
+          {/* <span style={{
             position: 'fixed',
             bottom: '14px',
             left: '18px',
@@ -44,7 +44,7 @@ export default function RootLayout({
             textTransform: 'uppercase',
           }}>
             matis dene portfolio
-          </span>
+          </span> */}
           </TransitionProvider>
         </UnderwaterProvider>
       </body>
