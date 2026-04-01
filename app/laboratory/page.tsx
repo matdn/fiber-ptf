@@ -11,9 +11,9 @@ import { DraggableSphere } from '@/components/DraggableSphere'
 import { CustomCursor } from '@/components/CustomCursor'
 import { HDRIEnvironment, TIME_SLOTS, getCurrentTimeSlot } from '@/components/scene/HDRIEnvironment'
 import { DevPanel } from '@/components/DevPanel'
-import { usePageTransition } from '@/contexts/TransitionContext'
-import { getProjectSlug, type ProjectItem } from '@/lib/projectImages'
+import type { ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
+import { ProjectDetailV2 } from '@/components/scene/ui/ProjectDetailV2'
 
 function SetClearColor({ color }: { color: string }) {
   const { gl } = useThree()
@@ -348,11 +348,11 @@ function Scene({ distortionIntensity, onDistortionChange, isUnderwater, dragVelo
 }
 
 export default function LaboratoryPage() {
-  const { navigate } = usePageTransition()
   const [distortionIntensity, setDistortionIntensity] = useState(0)
   const [dragVelocity, setDragVelocity] = useState({ x: 0, y: 0 })
   const [scrollVelocity, setScrollVelocity] = useState({ x: 0, y: 0 })
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null)
+  const [openProject, setOpenProject] = useState<ProjectItem | null>(null)
   const { isUnderwater } = useUnderwater()
   const [hdriSlotIndex, setHdriSlotIndex] = useState<number>(() => TIME_SLOTS.indexOf(getCurrentTimeSlot()))
   const isNight = TIME_SLOTS[hdriSlotIndex]?.name === 'night'
@@ -377,7 +377,7 @@ export default function LaboratoryPage() {
             onDragVelocity={setDragVelocity}
             scrollVelocity={scrollVelocity}
             onScrollVelocity={setScrollVelocity}
-            onProjectClick={setSelectedProject}
+            onProjectClick={setOpenProject}
             onIdleProjectChange={setSelectedProject}
             hdriSlotIndex={hdriSlotIndex}
             bgColor={bgColor}
@@ -400,10 +400,12 @@ export default function LaboratoryPage() {
           project={selectedProject}
           onOpen={() => {
             if (!selectedProject) return
-            const slug = getProjectSlug(selectedProject)
-            if (!slug) return
-            navigate(`/laboratory/${slug}`)
+            setOpenProject(selectedProject)
           }}
+        />
+        <ProjectDetailV2
+          project={openProject}
+          onClose={() => setOpenProject(null)}
         />
       </main>
     </>

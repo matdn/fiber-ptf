@@ -1,8 +1,8 @@
 [
   {
     "title": "Altitude 101",
-    "year": "2024",
-    "tags": ["Video Production", "3D", "Motion", "Next.js", "WebGL"],
+    "year": "2025-2026",
+    "tags": ["Web Immersif", "Three.js", "WebGL", "GSAP", "Next.js"],
     "projectUrl": "https://immersive.altitude101.com/",
     "imageUrl": "/imagesProject/img1.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
@@ -51,8 +51,8 @@
   },
   {
     "title": "Rubens",
-    "year": "2024",
-    "tags": ["E-Commerce", "Next.js", "Motion Design", "TypeScript"],
+    "year": "2025-2026",
+    "tags": ["Creative Dev", "R3F", "Three.js", "Motion Design"],
     "imageUrl": "/imagesProject/img2.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
@@ -66,8 +66,8 @@
   },
   {
     "title": "Dithering",
-    "year": "2023",
-    "tags": ["Data Viz", "Dashboard", "React", "D3.js"],
+    "year": "2025-2026",
+    "tags": ["Shader", "WebGL", "Three.js", "Post-Processing"],
     "imageUrl": "/imagesProject/img3.png",
     "detailImageUrl": null,
     "detailVideoUrl": null,
@@ -86,8 +86,8 @@
   },
   {
     "title": "HELMET",
-    "year": "2025",
-    "tags": ["3D", "Three.js", "WebGL", "Animation"],
+    "year": "2025-2026",
+    "tags": ["Creative Dev", "R3F", "Three.js", "Codrops"],
     "imageUrl": "/imagesProject/img4.png",
     "detailImageUrl": null,
     "detailVideoUrl": "/imagesProject/helmet/helmet_video_1.mp4",
@@ -106,8 +106,8 @@
   },
   {
     "title": "LABNOIR ",
-    "year": "2025",
-    "tags": ["Editorial", "Fashion", "Dark", "Motion", "3D"],
+    "year": "2025-2026",
+    "tags": ["Interactive", "Three.js", "WebGL", "Génératif", "Gobelins"],
     "imageUrl": "/imagesProject/cm/cm.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_2.png",
     "detailVideoUrl": "/imagesProject/alt101/alt101_video_1 .mp4",
@@ -142,8 +142,8 @@
   
   {
     "title": "MATZO",
-    "year": "2025",
-    "tags": ["Interactive", "Web Design", "Animation", "User Experience"],
+    "year": "2025-2026",
+    "tags": ["Game Dev", "WebGL", "Interactive", "Narrative"],
     "imageUrl": "/imagesProject/matzo/matzo_img_1.png",
     "detailImageUrl": null,
     "detailVideoUrl": "/imagesProject/matzo/matzo_video_1.mp4",
