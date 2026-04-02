@@ -3,14 +3,42 @@
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
-import { memo, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { memo, useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import type { ProjectItem } from "@/lib/projectImages";
 import { ProjectDetailFooter } from "./ProjectDetailFooter";
-import { PROJECTS, getProjectSlug } from "@/lib/projectImages";
+
+// ── Switch theme here ──────────────────────────────────────────────────────
+const THEME: "light" | "dark" = "dark";
+
+const T = {
+  light: {
+    panel:        "#fefefe",
+    backdrop:     "rgba(0,0,0,0.1)",
+    textPrimary:  "#000000",
+    textMuted:    "rgba(0,0,0,0.38)",
+    titleLabel:   "rgba(0,0,0,1)",
+    mediaBg:      "rgba(0,0,0,0.04)",
+    ctaBg:        "#000000",
+    ctaText:      "#ffffff",
+    featureHeading: "#000",
+  },
+  dark: {
+    panel:        "#111111",
+    backdrop:     "rgba(0,0,0,0.7)",
+    textPrimary:  "#f0f0f0",
+    textMuted:    "rgba(255,255,255,0.38)",
+    titleLabel:   "rgba(255,255,255,0.9)",
+    mediaBg:      "rgba(255,255,255,0.04)",
+    ctaBg:        "#ffffff",
+    ctaText:      "#000000",
+    featureHeading: "#f0f0f0",
+  },
+} as const;
+
+const C = T[THEME];
 
 type Props = {
-  project: ProjectItem;
+  project: ProjectItem | null;
   onClose: () => void;
 };
 
@@ -18,58 +46,84 @@ export const ProjectDetailView = memo(function ProjectDetailView({
   project,
   onClose,
 }: Props) {
-  const router = useRouter();
-  const rootRef = useRef<HTMLDivElement>(null);
-  const footerSentinelRef = useRef<HTMLDivElement>(null);
-  
-  const projectIndex = useMemo(() => {
-    return PROJECTS.findIndex((p) => p.title === project.title);
-  }, [project.title]);
-  
-  const prevProject = useMemo(() => {
-    const prevIndex = projectIndex === 0 ? PROJECTS.length - 1 : projectIndex - 1;
-    return PROJECTS[prevIndex];
-  }, [projectIndex]);
-  
-  const nextProject = useMemo(() => {
-    const nextIndex = projectIndex === PROJECTS.length - 1 ? 0 : projectIndex + 1;
-    return PROJECTS[nextIndex];
-  }, [projectIndex]);
-  
-  const mediaBlocks = project.detailBlocks.filter(
-    (b) => b.type === "image" || b.type === "video",
-  );
-  const heroMedia   = mediaBlocks[0] ?? null;
-  const galleryMedia = mediaBlocks.slice(1);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [mounted, setMounted] = useState(false);
+  const [displayedProject, setDisplayedProject] = useState<ProjectItem | null>(null);
 
   useEffect(() => {
-    if (!rootRef.current) return;
-    const currentProjectTitle = project.title;
-    const scrollRoot = rootRef.current.closest(
-      "[data-scene-scroll-root='true']",
-    ) as HTMLElement | null;
+    if (project) {
+      setDisplayedProject(project);
+      setMounted(true);
+    }
+  }, [project]);
+
+  // Entrance animation — useLayoutEffect to set initial position before paint
+  useLayoutEffect(() => {
+    if (!mounted || !panelRef.current) return;
+    // Set initial states synchronously before browser paints
+    gsap.set(backdropRef.current, { opacity: 0 });
+    gsap.set(panelRef.current, { y: "60%" });
+    // Then animate
+    gsap.to(backdropRef.current, { opacity: 1, duration: 0.8, ease: "power2.out" });
+    gsap.to(panelRef.current, { y: "0vh", duration: 0.75, ease: "expo.out" });
+  }, [mounted]);
+
+  const animateOut = useCallback((then: () => void) => {
+    if (!panelRef.current) { then(); return; }
+    gsap.to(backdropRef.current, { opacity: 0, duration: 0.4, ease: "power2.in" });
+    gsap.to(panelRef.current, {
+      y: "60%",
+      duration: 0.45,
+      ease: "expo.in",
+      onComplete: then,
+    });
+  }, []);
+
+  const handleClose = useCallback(() => {
+    animateOut(() => {
+      setMounted(false);
+      onClose();
+    });
+  }, [animateOut, onClose]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mounted, handleClose]);
+
+  // GSAP scroll-reveal animations
+  useEffect(() => {
+    if (!scrollRef.current || !displayedProject) return;
+    const currentProjectTitle = displayedProject.title;
+    const scrollRoot = scrollRef.current;
 
     gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       gsap.fromTo(
         "[data-pdv-hero-title]",
         { autoAlpha: 0, y: 36 },
-        { autoAlpha: 1, y: 0, duration: 0.8, delay: 0.06, ease: "power3.out" },
+        { autoAlpha: 1, y: 0, duration: 0.8, delay: 0.32, ease: "power3.out" },
       );
       gsap.fromTo(
         "[data-pdv-hero-copy]",
         { autoAlpha: 0, y: 22 },
-        { autoAlpha: 1, y: 0, duration: 0.75, delay: 0.14, ease: "power3.out" },
+        { autoAlpha: 1, y: 0, duration: 0.75, delay: 0.4, ease: "power3.out" },
       );
       gsap.fromTo(
         "[data-pdv-tags]",
         { autoAlpha: 0, y: 16 },
-        { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.22, ease: "power3.out" },
+        { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.48, ease: "power3.out" },
       );
       gsap.fromTo(
         "[data-pdv-hero-media]",
         { autoAlpha: 0, scale: 1.04 },
-        { autoAlpha: 1, scale: 1, duration: 1.1, delay: 0.04, ease: "power2.out" },
+        { autoAlpha: 1, scale: 1, duration: 1.1, delay: 0.18, ease: "power2.out" },
       );
 
       const revealTargets = gsap.utils.toArray<HTMLElement>("[data-pdv-animate]");
@@ -84,7 +138,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
             ease: "power3.out",
             scrollTrigger: {
               trigger: target,
-              scroller: scrollRoot || undefined,
+              scroller: scrollRoot,
               id: `pdv-${currentProjectTitle}-${index}`,
               start: "top 86%",
               once: true,
@@ -92,87 +146,121 @@ export const ProjectDetailView = memo(function ProjectDetailView({
           },
         );
       });
-    }, rootRef);
+    }, scrollRef);
 
     return () => { ctx.revert(); };
-  }, [project.title]);
+  }, [displayedProject]);
+
+  if (!mounted || !displayedProject) return null;
+
+  const mediaBlocks = displayedProject.detailBlocks.filter(
+    (b) => b.type === "image" || b.type === "video",
+  );
+  const heroMedia   = mediaBlocks[0] ?? null;
+  const galleryMedia = mediaBlocks.slice(1);
 
   return (
     <div
-      ref={rootRef}
-      className="w-full"
-      style={{ position: "relative", paddingTop: "8dvh" }}
+      ref={overlayRef}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+      }}
     >
-      <div
-        id="project-detail-footer-sentinel"
-        ref={footerSentinelRef}
-        aria-hidden="true"
+      {/* Backdrop */}
+      <button
+        ref={backdropRef}
+        type="button"
         style={{
           position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: "40vh",
-          pointerEvents: "none",
+          inset: 0,
+          background: C.backdrop,
+          border: "none",
+          cursor: "default",
+          pointerEvents: "auto",
+          opacity: 0,
         }}
+        onClick={handleClose}
+        aria-label="Fermer"
       />
-      {/* Content layer — slides over sticky footer */}
-      <div style={{ position: "relative", zIndex: 1, background: "#fefefe" }}>
 
-        {/* ── Back to works button ───────────────────────────────────── */}
-        <button
+      {/* Panel */}
+      <div
+        ref={panelRef}
+        style={{
+          position: "relative",
+          width: "90vw",
+          height: "90vh",
+          // borderRadius: "1rem",
+          background: C.panel,
+          display: "flex",
+          flexDirection: "column",
+          pointerEvents: "auto",
+          boxShadow: "0 24px 72px rgba(0,0,0,0.22)",
+          willChange: "transform",
+        }}
+      >
+        {/* Close button */}
+        {/* <button
           type="button"
-          onClick={() => router.push('/laboratory')}
+          onClick={handleClose}
+          aria-label="Fermer"
           style={{
-            position: "fixed",
-            marginLeft: "2.5rem",
-            marginTop: "0rem",
-            marginBottom: "1.25rem",
-            fontSize: "0.7rem",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "rgba(0,0,0,1.0)",
-            background: "rgba(255,255,255,1.5)",
+            position: "absolute",
+            top: "1rem",
+            right: "1.2rem",
+            zIndex: 10,
+            width: "2rem",
+            height: "2rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.07)",
             border: "none",
-            padding: "0.8rem 1.2rem",
-            borderRadius: "0px",
+            borderRadius: "50%",
             cursor: "pointer",
-            transition: "all 0.3s ease",
-            fontWeight: 500,
-            fontFamily: '"Mabry Pro", sans-serif',
-            zIndex: 10000,
-            mixBlendMode: "difference",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.8)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
+            fontSize: "0.9rem",
+            color: "#1a1a1a",
           }}
         >
-          Retour
-        </button>
+          ✕
+        </button> */}
+
+        {/* Scrollable content */}
+        <div
+          ref={scrollRef}
+          data-scene-scroll-root="true"
+          className="pdv-scroll"
+          style={{ overflowY: "auto", flex: 1, position: "relative" }}
+        >
+
+      <div style={{ position: "relative", background: C.panel, paddingTop: "3dvh" }}>
 
         {/* ── Hero: split (text left / video right) ───────────────── */}
         <section style={{ padding: "1rem 1.5rem 0", display: "flex", justifyContent: "center" }}>
           <div
-            className=" grid-cols-1 lg:grid-cols-2 flex flex-col-reverse md:flex md:justify-between md:flex-row"
-            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif", maxWidth: "95dvw" }}
+            className="flex flex-col-reverse md:flex md:justify-between md:flex-row h-[80dvh]"
+            style={{ gap: "3rem", alignItems: "stretch", fontFamily: "Neopixel, sans-serif", maxWidth: "95%" }}
           >
-            <div className="flex flex-col w-full md:w-1/2" style={{ minHeight: "62vh" }}>
+            <div className="flex flex-col w-full md:w-1/2" style={{ minHeight: "40vh" }}>
               <p
                 style={{
                   fontSize: "0.95rem",
                   letterSpacing: "0.2em",
                   textTransform: "uppercase",
-                  color: "rgba(0,0,0)",
+                  color: C.titleLabel,
                   paddingTop: "0.4rem",
                   fontWeight: 800,
                   transform: "translateY(50px)",
                 }}
               >
-                {project.title}
-              </p>
+              {displayedProject.title}
+            </p>
 
               <div style={{ flex: 1 }} />
 
@@ -183,14 +271,14 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   fontWeight: 500,
                   letterSpacing: "-0.02em",
                   lineHeight: 1.12,
-                  color: "#000000",
+                  color: C.textPrimary,
                   marginBottom: "1.4rem",
                 }}
               >
-                {project.description}
+                {displayedProject.description}
               </h1>
 
-              {project.detailBlocks
+              {displayedProject.detailBlocks
                 .filter((b) => b.type === "text")
                 .slice(0, 1)
                 .map((b, i) =>
@@ -202,7 +290,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                       style={{
                         fontSize: "0.8rem",
                         lineHeight: 1.82,
-                        color: "rgba(0,0,0,0.38)",
+                        color: C.textMuted,
                         fontFamily: '"Mabry Pro", sans-serif',
 
                       }}
@@ -212,10 +300,10 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   ) : null,
                 )}
 
-              {project.projectUrl && (
+              {displayedProject.projectUrl && (
                 <div style={{ paddingTop: "1.5rem" }}>
                   <a
-                    href={project.projectUrl}
+                    href={displayedProject.projectUrl}
                     target="_blank"
                     rel="noreferrer"
                     style={{
@@ -224,8 +312,8 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                       justifyContent: "center",
                       padding: "0.9rem 1.2rem",
                       borderRadius: "0px",
-                      background: "#000000",
-                      color: "#ffffff",
+                      background: C.ctaBg,
+                      color: C.ctaText,
                       fontSize: "0.72rem",
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -264,10 +352,10 @@ export const ProjectDetailView = memo(function ProjectDetailView({
 
             <div
               data-pdv-hero-media
-              className="relative overflow-hidden md:w-1/2 "
+              className="relative overflow-hidden md:w-1/2"
               style={{
-                height: "90vh",
-                background: "rgba(0,0,0,0.04)",
+                height: "80vh",
+                background: C.mediaBg,
                 borderRadius: "0px",
               }}
             >
@@ -280,7 +368,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   playsInline
                   draggable={false}
                   onDragStart={(event) => event.preventDefault()}
-                  className="absolute inset-0 m-w-1/2 h-full object-cover scale-105"
+                  className="absolute inset-0 w-full h-full object-cover scale-105"
                 />
               ) : heroMedia?.type === "image" ? (
                 <Image
@@ -293,7 +381,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                 />
               ) : (
                 <Image
-                  src={project.imageUrl}
+                  src={displayedProject.imageUrl}
                   alt=""
                   fill
                   sizes="45vw"
@@ -305,7 +393,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
           </div>
         </section>
 
-        <div style={{ height: "clamp(4rem, 8vw, 7rem)" }} />
+        <div style={{ height: "clamp(2rem, 4vw, 4rem)" }} />
 
         {/* ── Gallery grid ──────────────────────────────────── */}
         {galleryMedia.length > 0 && (
@@ -318,7 +406,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                   className="relative overflow-hidden"
                   style={{
                     height: "400px",
-                    background: "rgba(0,0,0,0.04)",
+                    background: C.mediaBg,
                   }}
                 >
                   {block.type === "video" ? (
@@ -333,7 +421,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
         )}
 
         {/* ── Feature-grid blocks ──────────────────────────────────── */}
-        {project.detailBlocks
+        {displayedProject.detailBlocks
           .filter((b) => b.type === "feature-grid")
           .map((block, i) => {
             if (block.type !== "feature-grid") return null;
@@ -349,7 +437,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
                     fontWeight: 200,
                     letterSpacing: "-0.03em",
                     lineHeight: 1.1,
-                    color: "#000",
+                    color: C.featureHeading,
                     maxWidth: "26ch",
                     marginBottom: "2rem",
                     textTransform: "uppercase",
@@ -386,78 +474,13 @@ export const ProjectDetailView = memo(function ProjectDetailView({
               </section>
             );
           })}
+               <ProjectDetailFooter />
 
-        {/* ── Next/Previous Projects Navigation ──────────────────────────────────── */}
-        <div style={{ padding: "4rem 2.5rem 3rem" }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: "2rem" }}>
-            {/* Previous Project */}
-            <div className="flex justify-start">
-              <button
-                type="button"
-                onClick={() => router.push(`/laboratory/${getProjectSlug(prevProject)}`)}
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  padding: "0.3rem 0",
-                  borderRadius: "0px",
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  color: "rgba(0,0,0,0.35)",
-                  transition: "color 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.8)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
-                }}
-              >
-                {/* <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet précédent</p> */}
-                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease", textTransform: "uppercase" }}>{prevProject.title}</h3>
-              </button>
-            </div>
+      </div>
 
-            {/* Next Project */}
-            <div className="flex justify-start lg:justify-end">
-              <button
-                type="button"
-                onClick={() => router.push(`/laboratory/${getProjectSlug(nextProject)}`)}
-                style={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                  padding: "0.3rem 0",
-                  borderRadius: "0px",
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  textAlign: "right",
-                  color: "rgba(0,0,0,0.35)",
-                  transition: "color 0.3s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.8)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,0,0,0.35)";
-                }}
-              >
-                {/* <p style={{ fontSize: "0.65rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "currentColor", marginBottom: "0.35rem", fontWeight: 500, transition: "color 0.3s ease" }}>Projet suivant</p> */}
-                <h3 style={{ fontSize: "0.95rem", letterSpacing: "-0.01em", color: "currentColor", fontWeight: 500, transition: "color 0.3s ease", textTransform: "uppercase" }}>{nextProject.title}</h3>
-              </button>
-            </div>
-          </div>
         </div>
-
       </div>
-
-      {/* Footer — sticky, revealed as content scrolls past */}
-      <div style={{ position: "sticky", bottom: 0, zIndex: 0 }}>
-        <ProjectDetailFooter onBack={onClose} projectTitle={project.title} />
-      </div>
+     
     </div>
   );
 });

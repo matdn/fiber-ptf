@@ -204,7 +204,7 @@ export const SceneCanvas = memo(function SceneCanvas({
   return (
     <Canvas
       camera={{ position: [-20, -10, -10], fov: 40 }}
-      frameloop={isProjectDetailView && !isUnderwater ? "never" : "always"}
+      frameloop="always"
       dpr={[1, 1.5]}
       gl={{
         antialias: false,

@@ -13,7 +13,7 @@ import { HDRIEnvironment, TIME_SLOTS, getCurrentTimeSlot } from '@/components/sc
 import { DevPanel } from '@/components/DevPanel'
 import type { ProjectItem } from '@/lib/projectImages'
 import Image from 'next/image'
-import { ProjectDetailV2 } from '@/components/scene/ui/ProjectDetailV2'
+import { ProjectDetailView } from '@/components/scene/ui/ProjectDetailView'
 
 function SetClearColor({ color }: { color: string }) {
   const { gl } = useThree()
@@ -403,7 +403,7 @@ export default function LaboratoryPage() {
             setOpenProject(selectedProject)
           }}
         />
-        <ProjectDetailV2
+        <ProjectDetailView
           project={openProject}
           onClose={() => setOpenProject(null)}
         />

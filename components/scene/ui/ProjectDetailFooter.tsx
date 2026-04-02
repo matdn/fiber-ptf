@@ -3,6 +3,16 @@
 import { useEffect, useRef } from "react";
 import { getProjectMeshColor } from "@/lib/projectColors";
 
+// ── Switch theme here ──────────────────────────────────────────────────────
+const THEME: "light" | "dark" = "dark";
+
+const T = {
+  light: { bg: "#ffffff",  logoBg: "#ffffff",  ghostText: "rgba(0,0,0,0.02)",       maskText: "#000000" },
+  dark:  { bg: "#111111",  logoBg: "#111111",  ghostText: "rgba(255,255,255,0.02)", maskText: "#ffffff" },
+} as const;
+
+const C = T[THEME];
+
 // ── Logo geometry (same paths as contact page) ──────────────────────────────
 const SVG_W = 2072;
 const SVG_H = 1339;
@@ -42,8 +52,8 @@ const SOCIALS = [
 ];
 
 interface Props {
-  onBack: () => void;
-  projectTitle: string;
+  onBack?: () => void;
+  projectTitle?: string;
   fillStyle?: string;
 }
 
@@ -290,14 +300,14 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
   return (
     <footer
       ref={footerRef}
-      className="relative w-full bg-[#ffffff] overflow-hidden"
-      style={{ maxHeight: "100vh" }}
+      className="relative w-full overflow-hidden"
+      style={{ maxHeight: "100vh", background: C.bg }}
     >
       {/* Matter.js canvas */}
       <canvas
         ref={canvasRef}
         className="absolute bottom-0 inset-0 w-full h-full"
-        style={{ display: "block", backgroundColor: "#ffffff" }}
+        style={{ display: "block", backgroundColor: C.logoBg }}
       />
 
       {/* Content overlay */}
@@ -311,7 +321,7 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
             style={{
               fontSize: "clamp(5rem, 15vw, 14rem)",
               letterSpacing: "-0.04em",
-              color: "rgba(0,0,0,0.02)",
+              color: C.ghostText,
             }}
           >
             PORTFOLIO
@@ -334,7 +344,7 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
               style={{
                 fontSize: "clamp(5rem, 15vw, 14rem)",
                 letterSpacing: "-0.04em",
-                color: "black", 
+                color: C.maskText, 
               }}
             >
               PORTFOLIO

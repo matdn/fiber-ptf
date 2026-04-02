@@ -2,6 +2,9 @@ html,
 body {
   overscroll-behavior-x: none;
 }
+
+.pdv-scroll::-webkit-scrollbar { display: none; }
+.pdv-scroll { scrollbar-width: none; -ms-overflow-style: none; }
 @import "tailwindcss";
 
 @font-face {
