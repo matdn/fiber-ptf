@@ -2,7 +2,7 @@
   {
     "title": "Altitude 101",
     "year": "2025-2026",
-    "tags": ["Web Immersif", "Three.js", "WebGL", "GSAP", "Next.js"],
+    "tags": ["Immersive Web", "Three.js", "WebGL", "GSAP", "Next.js"],
     "projectUrl": "https://immersive.altitude101.com/",
     "imageUrl": "/imagesProject/img1.png",
     "detailImageUrl": "/imagesProject/alt101/alt101_3.png",
@@ -27,7 +27,7 @@
       },
       {
         "type": "text",
-        "content": "Altitude.101 est une entreprise basée à Paris, spécialisée dans la photographie et la vidéographie. Elle crée des contenus visuels à fort impact, avec une approche flexible, innovante et tournée vers l'excellence.\n\nPour ce projet, j'ai conçu et développé un site vitrine immersif reflétant l'univers visuel de la marque et son positionnement créatif. L'objectif était de traduire son identité à travers une expérience digitale forte, dynamique et contemporaine.\n\nCôté développement, le site s'appuie sur Three.js et WebGL pour les rendus visuels interactifs, Matter.js pour les effets physiques et les interactions dynamiques, et GSAP pour des animations fluides et précises. L'ensemble permet de créer une expérience engageante, cohérente avec l'image premium et innovante d'Altitude.101."
+        "content": "Altitude.101 is a Paris-based company specializing in photography and videography. It creates high-impact visual content with a flexible, innovative, and excellence-driven approach.\n\nFor this project, I designed and developed an immersive showcase website reflecting the brand's visual universe and creative positioning. The goal was to translate its identity through a strong, dynamic, and contemporary digital experience.\n\nOn the development side, the site relies on Three.js and WebGL for interactive visual rendering, Matter.js for physics effects and dynamic interactions, and GSAP for smooth and precise animations. Together, they create an engaging experience consistent with Altitude.101's premium and innovative image."
       },
       {
         "type": "text",
@@ -35,19 +35,19 @@
       },
       {
         "type": "feature-grid",
-        "heading": "Altitude 101 — du récit mobile au cinéma desktop.",
+        "heading": "Altitude 101 — from mobile storytelling to desktop cinema.",
        
         "paragraphs": [
-          "Le projet a ete pense comme une experience continue: sur mobile, l interface priorise le rythme de lecture et la vitesse d acces; sur desktop, la mise en scene privilegie les medias immersifs, les transitions fluides et la profondeur visuelle.",
-          "Le loader introduit la direction artistique avec une animation progressive des couches visuelles. Il sert a masquer les temps de chargement video, precharger les medias critiques et poser immediatement l identite du projet.",
-          "Le comportement responsive conserve la meme signature graphique, mais ajuste la hierarchie, la densite de contenu et le ratio des plans pour garder un impact constant sur tous les ecrans."
+          "The project was conceived as a continuous experience: on mobile, the interface prioritizes reading rhythm and access speed; on desktop, the staging favors immersive media, smooth transitions, and visual depth.",
+          "The loader introduces the artistic direction with a progressive animation of visual layers. It serves to mask video loading times, preload critical media, and immediately establish the project's identity.",
+          "The responsive behavior maintains the same graphic signature, but adjusts the hierarchy, content density, and shot ratios to maintain a consistent impact across all screens."
         ],
          "videoSrc": "/imagesProject/alt101/alt101_video_2.mp4",
         "imageSrc": "/imagesProject/alt101/alt101_2.png"
         
       }
     ],
-    "description": "Expérience web immersive, Three.js, WebGL et GSAP."
+    "description": "Immersive web experience, Three.js, WebGL and GSAP."
   },
   {
     "title": "Rubens",
@@ -59,10 +59,10 @@
     "detailBlocks": [
       {
         "type": "text",
-        "content": "Rubens est une déclinaison de Helmet, pensée comme une nouvelle exploration visuelle autour du carousel vertical infini.\n\nL'idée était de reprendre cette base interactive pour la pousser dans une direction plus éditoriale et plus expressive, en travaillant davantage la composition, le rythme et la présence des visuels dans l'espace.\n\nLe projet a été développé avec React Three Fiber et Three.js, dans une logique d'expérimentation autour de la mise en scène et du mouvement en 3D temps réel."
+        "content": "Rubens is a variation of Helmet, conceived as a new visual exploration around the infinite vertical carousel.\n\nThe idea was to take this interactive foundation and push it in a more editorial and expressive direction, working more deeply on composition, rhythm, and the presence of visuals in space.\n\nThe project was developed with React Three Fiber and Three.js, as an experimentation around staging and movement in real-time 3D."
       }
     ],
-    "description": "Carousel vertical infini, direction éditoriale avec R3F."
+    "description": "Infinite vertical carousel, editorial direction with R3F."
   },
   {
     "title": "Dithering",
@@ -79,10 +79,10 @@
       },
       {
         "type": "text",
-        "content": "Dithering est un projet personnel qui s'inscrit dans une série d'expérimentations visuelles et techniques.\n\nDans ce test, j'explore le dithering, une technique de rendu qui simule des nuances et des dégradés à partir de motifs de points ou de trames, souvent utilisée pour donner une texture plus brute, graphique ou rétro à une image.\n\nL'effet a été développé en post-processing à l'aide d'un shader en WebGL, avec une stack basée sur Three.js et WebGL."
+        "content": "Dithering is a personal project that is part of a series of visual and technical experiments.\n\nIn this test, I explore dithering, a rendering technique that simulates shades and gradients using dot or halftone patterns, often used to give an image a rougher, graphic, or retro texture.\n\nThe effect was developed in post-processing using a WebGL shader, with a stack based on Three.js and WebGL."
       }
     ],
-    "description": "Post-processing WebGL — exploration visuelle du dithering."
+    "description": "WebGL post-processing — visual exploration of dithering."
   },
   {
     "title": "HELMET",
@@ -99,43 +99,29 @@
       },
       {
         "type": "text",
-        "content": "Helmet est un projet d'expérimentation autour de la création d'un carousel vertical infini à l'esthétique créative et immersive.\n\nDéveloppé avec React Three Fiber et Three.js, ce test m'a permis d'explorer de nouvelles approches d'animation et de composition en 3D temps réel.\n\nLe projet a ensuite donné lieu à un article sur Codrops, dans lequel l'effet est expliqué en détail, ainsi qu'à une déclinaison intitulée Rubens."
+        "content": "Helmet is an experimentation project around building an infinite vertical carousel with a creative and immersive aesthetic.\n\nDeveloped with React Three Fiber and Three.js, this test allowed me to explore new animation and composition approaches in real-time 3D.\n\nThe project later gave rise to an article on Codrops, in which the effect is explained in detail, as well as a variation titled Rubens."
       }
     ],
-    "description": "Carousel 3D infini, expérimentation R3F sur Codrops."
+    "description": "Infinite 3D carousel, R3F experimentation on Codrops."
   },
   {
     "title": "LABNOIR ",
     "year": "2025-2026",
-    "tags": ["Interactive", "Three.js", "WebGL", "Génératif", "Gobelins"],
+    "tags": ["Interactive", "Three.js", "WebGL", "Generative", "Gobelins"],
     "imageUrl": "/imagesProject/cm/cm.png",
-    "detailImageUrl": "/imagesProject/alt101/alt101_2.png",
-    "detailVideoUrl": "/imagesProject/alt101/alt101_video_1 .mp4",
-    "description": "Labyrinthe génératif autour du thème de l'angoisse.",
+    "detailImageUrl": "/imagesProject/cm/cm.png",
+    "detailVideoUrl": "/imagesProject/cm/cm.png",
+    "description": "Generative maze around the theme of anxiety.",
     "detailBlocks": [
       {
-        "type": "video",
-        "src": "/imagesProject/alt101/alt101_video_1 .mp4",
+        "type": "image",
+        "src": "/imagesProject/cm/cm.png",
         "height": 620
       },
-      {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_2.png",
-        "height": 540
-      },
-      {
-        "type": "image",
-        "src": "/imagesProject/alt101/alt101_3.png",
-        "height": 420
-      },
-      {
-        "type": "video",
-        "src": "/imagesProject/alt101/alt101_video_3.mp4",
-        "height": 420
-      },
+    
       {
         "type": "text",
-        "content": "LABNOIR est une expérience interactive créée en deux jours aux Gobelins autour du thème de l'angoisse.\n\nJ'y ai conçu un labyrinthe génératif en JavaScript vanilla, avec Three.js et WebGL pour le rendu et la post-production."
+        "content": "LABNOIR is an interactive experience created in two days at Gobelins around the theme of anxiety.\n\nI designed a generative maze in vanilla JavaScript, with Three.js and WebGL for rendering and post-processing."
       }
     ]
   },
@@ -147,7 +133,7 @@
     "imageUrl": "/imagesProject/matzo/matzo_img_1.png",
     "detailImageUrl": null,
     "detailVideoUrl": "/imagesProject/matzo/matzo_video_1.mp4",
-    "description": "Mini-jeu narratif dans un univers sombre.",
+    "description": "Narrative mini-game in a dark universe.",
     "detailBlocks": [
       {
         "type": "video",
@@ -156,7 +142,7 @@
       },
       {
         "type": "text",
-        "content": "Matzo est un mini-jeu narratif actuellement en développement.\n\nLe joueur y incarne un petit personnage perdu dans l'obscurité, en quête de son chemin et de son amie Jo, dans un univers à la fois fragile, silencieux et énigmatique.\n\nLe projet mêle exploration, résolution d'énigmes et progression narrative, avec l'envie de construire une expérience portée autant par l'atmosphère que par le gameplay. À travers ses déplacements, les éléments du décor et les obstacles rencontrés, le joueur découvre peu à peu un monde tamisé, mystérieux, où chaque avancée participe à renforcer le lien entre récit, espace et sensation.\n\nPensé comme une expérience à la fois sensible et immersive, Matzo s'articule autour d'une ambiance douce, contemplative et légèrement inquiétante, où la pénombre devient autant un décor qu'un langage narratif."
+        "content": "Matzo is a narrative mini-game currently in development.\n\nThe player embodies a small character lost in darkness, searching for their path and their friend Jo, in a universe that is fragile, silent, and enigmatic.\n\nThe project blends exploration, puzzle-solving, and narrative progression, with a desire to build an experience driven as much by atmosphere as by gameplay. Through movement, environmental elements, and obstacles encountered, the player gradually discovers a dim, mysterious world where each advance reinforces the connection between story, space, and sensation.\n\nConceived as both a sensitive and immersive experience, Matzo revolves around a gentle, contemplative, and slightly unsettling atmosphere, where the shadows become both a setting and a narrative language."
       }
     ]
   }
