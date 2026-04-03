@@ -44,8 +44,8 @@ export const TIME_SLOTS: TimeSlot[] = [
     hourStart: 21,
     hourEnd: 10,
     hdri: '/hdri/night.hdr',
-    envIntensity: 0.6,
-    bgBlurriness: 0.2,
+    envIntensity: 0.2,
+    bgBlurriness: 0.4,
     bgIntensity: 1.7,
   },
 ]

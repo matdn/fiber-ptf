@@ -262,7 +262,7 @@ export default function ContactPage() {
       <div className="relative z-10 flex flex-col items-center justify-start pt-[24dvh] px-6 ">
         <h1
           style={{
-            fontFamily: 'Neopixel, sans-serif',
+            fontFamily: 'Mabry Pro, sans-serif',
             fontSize: 'clamp(3rem, 9vw, 9rem)',
             fontWeight: 400,
             letterSpacing: '-0.04em',
@@ -270,6 +270,7 @@ export default function ContactPage() {
             color: '#ffffff',
             textAlign: 'center',
             pointerEvents: 'none',
+            textTransform: 'uppercase',
           }}
         >
           {"let's work"}
@@ -291,7 +292,7 @@ export default function ContactPage() {
           >
             contact me
           </a>
-          <a
+          {/* <a
             href="/cv.pdf"
             download
             style={{
@@ -305,7 +306,7 @@ export default function ContactPage() {
             }}
           >
             download my CV
-          </a>
+          </a> */}
         </div>
       </div>
       <CustomCursor enabled={true} environment="surface" onRequest={() => {}} />

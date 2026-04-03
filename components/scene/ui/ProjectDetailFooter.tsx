@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { getProjectMeshColor } from "@/lib/projectColors";
 
 // ── Switch theme here ──────────────────────────────────────────────────────
-const THEME: "light" | "dark" = "dark";
+const THEME: "light" | "dark" = "light";
 
 const T = {
   light: { bg: "#ffffff",  logoBg: "#ffffff",  ghostText: "rgba(0,0,0,0.02)",       maskText: "#000000" },
@@ -45,10 +45,8 @@ const LOGO_W = 28;
 
 const SOCIALS = [
   { label: "Instagram", href: "https://instagram.com/" },
-  { label: "GitHub", href: "https://github.com/" },
-  { label: "LinkedIn", href: "https://linkedin.com/in/" },
-  { label: "X", href: "https://x.com/" },
-  { label: "Behance", href: "https://behance.net/" },
+  { label: "GitHub",    href: 'https://github.com/matdn' },
+  { label: "LinkedIn",  href: 'https://www.linkedin.com/in/matis-dene/' },
 ];
 
 interface Props {
@@ -296,6 +294,7 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
 
     return () => cleanup?.();
   }, [fillStyle, projectTitle]);
+  const sepStyle = { color: THEME === "dark" ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)' }
 
   return (
     <footer
@@ -353,7 +352,25 @@ export function ProjectDetailFooter({ onBack, projectTitle, fillStyle }: Props) 
         </div>
 
         {/* Bottom bar */}
-        
+        <div className="flex items-center text-black justify-center gap-6 py-4 text-sm pointer-events-auto">
+          {SOCIALS.map((link, i) => (
+          <a
+            key={link.label}
+            href={link.href}
+            target={link.href.startsWith('mailto') ? undefined : '_blank'}
+            rel="noopener noreferrer"
+            className={`pointer-events-auto transition-colors text-black duration-300 tracking-[0.2em] uppercase ${THEME === "dark" ? 'text-white/30 hover:text-white/80' : 'text-white/30 hover:text-white/80'}`}
+            style={{ fontSize: '9px', fontWeight: 300, color: "black" }}
+          >
+            {link.label}
+            {i < SOCIALS.length - 1 && (
+              <span className="ml-6 pointer-events-none text-black select-none" style={sepStyle}>·</span>
+            )}
+          </a>
+          ))}
+        </div>
+      
+    
       </div>
     </footer>
   );

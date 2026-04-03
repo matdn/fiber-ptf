@@ -8,7 +8,7 @@ import type { ProjectItem } from "@/lib/projectImages";
 import { ProjectDetailFooter } from "./ProjectDetailFooter";
 
 // ── Switch theme here ──────────────────────────────────────────────────────
-const THEME: "light" | "dark" = "dark";
+const THEME: "light" | "dark" = "light";
 
 const T = {
   light: {
@@ -474,7 +474,7 @@ export const ProjectDetailView = memo(function ProjectDetailView({
               </section>
             );
           })}
-               <ProjectDetailFooter />
+        <ProjectDetailFooter />
 
       </div>
 

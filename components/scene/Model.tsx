@@ -172,6 +172,58 @@ export function Model({ onCurveFound, onCurveRefFound, onCurveStarFound, isUnder
     return () => { ellipseMaterial.dispose() }
   }, [ellipseMaterial])
 
+  // Drag-to-rotate with inertia
+  const dragState = useRef({ dragging: false, lastX: 0, lastY: 0, velX: 0, velY: 0 })
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent | TouchEvent) => {
+      const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+      dragState.current = { dragging: true, lastX: x, lastY: y, velX: 0, velY: 0 }
+    }
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragState.current.dragging) return
+      const x = 'touches' in e ? e.touches[0].clientX : e.clientX
+      const y = 'touches' in e ? e.touches[0].clientY : e.clientY
+      dragState.current.velX = x - dragState.current.lastX
+      dragState.current.velY = y - dragState.current.lastY
+      dragState.current.lastX = x
+      dragState.current.lastY = y
+    }
+    const onUp = () => { dragState.current.dragging = false }
+
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    window.addEventListener('touchstart', onDown, { passive: true })
+    window.addEventListener('touchmove', onMove, { passive: true })
+    window.addEventListener('touchend', onUp)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchstart', onDown)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+  }, [])
+
+  useFrame((_, delta) => {
+    const c = curveRef.current
+    if (!c || isUnderwater || isInSpace) return
+    const d = dragState.current
+    if (d.dragging) {
+      c.rotation.z += d.velX * 0.008
+      d.velX = 0
+      d.velY = 0
+    } else {
+      // inertia decay
+      c.rotation.z += d.velX * 0.008
+      d.velX *= Math.pow(0.85, delta * 60)
+      d.velY *= Math.pow(0.85, delta * 60)
+    }
+  })
+
   const curve = curveRef.current
 
   return (
